@@ -27,11 +27,17 @@ DCL主要用于授予和召回权限,核心的关键字是grant和revoke;
 TCL通常用于事务控制
 
 建库建表
+
 数据库名：school
+
 学院表(tb_collage)
+
 学生表(tb_student)
+
 教师表(tb_teacher)
+
 课程表(tb_course)
+
 选课记录表(tb_record)
 
 ```SQL
