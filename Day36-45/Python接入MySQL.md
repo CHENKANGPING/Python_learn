@@ -181,7 +181,7 @@ pip install openpyxl
 import openpyxl
 import pymysql
 
-# 创建工作薄对象
+# 创建工作簿对象
 workbook = openpyxl.Workbook()
 
 # 获得默认的工作表
@@ -194,25 +194,26 @@ sheet.title = '员工基本信息'
 sheet.append(('工号', '姓名', '职位', '月薪', '补贴', '部门'))
 
 # 创建连接
-conn = pymysql.connect(host = '127.0.0.1', port = 3306,
-                       user = 'root', password = '123456'
-                       database = 'hrs', charset = 'utf8m4b')
+conn = pymysql.connect(host='127.0.0.1', port=3306,
+                       user='root', password='123456',
+                       database='hrs', charset='utf8mb4')
 
 try:
     with conn.cursor() as cursor:
         cursor.execute(
-            'select `eno`, `ename`, `job`, `sal`, coalesce(`comm` 0), `dname`'
-            'from `tb_emp` natural join `tb_dept`'
+            'SELECT `eno`, `ename`, `job`, `sal`, COALESCE(`comm`, 0), `dname` '
+            'FROM `tb_emp` NATURAL JOIN `tb_dept`'
         )
-        row = cursor.fetchone()
-        while row:
+        # 使用 fetchall 获取所有数据
+        rows = cursor.fetchall()
+        for row in rows:
             sheet.append(row)
-            row = cursor.fetchone()
     
+    # 保存工作簿
     workbook.save('hrs.xlsx')
+    print("数据已成功导出到 hrs.xlsx 文件中。")
 except pymysql.MySQLError as err:
-    print(err)
-
+    print("数据库操作失败：", err)
 finally:
     conn.close()
 ```
