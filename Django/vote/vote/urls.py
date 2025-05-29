@@ -17,13 +17,15 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 
-from django.contrib import admin
-from django.urls import path
-
-from polls.views import  show_subjects, show_teachers
+from polls.views import show_subjects, show_teachers, praise_or_criticize, login, logout, get_captcha
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', show_subjects),
     path('teachers/', show_teachers, name='teachers'),
+    path('praise/', praise_or_criticize, name='praise'),
+    path('criticize/', praise_or_criticize, name='criticize'),
+    path('login/', login, name='login'),
+    path('logout/', logout, name='logout'),
+    path('captcha/', get_captcha, name='captcha'),
 ]

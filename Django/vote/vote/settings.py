@@ -12,6 +12,10 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 
 from pathlib import Path
 import os
+from dotenv import load_dotenv
+
+# 加载环境变量
+load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -21,12 +25,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-#_^r6dq34i8kzf1$(wdg=-!y$5ymc2)-ydn+%#tr36+s-@(wxe'
+SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'django-insecure-#_^r6dq34i8kzf1$(wdg=-!y$5ymc2)-ydn+%#tr36+s-@(wxe')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv('DJANGO_DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = os.getenv('DJANGO_ALLOWED_HOSTS', '*').split(',')
 
 
 # Application definition
@@ -77,21 +81,14 @@ WSGI_APPLICATION = 'vote.wsgi.application'
 
 DATABASES = {
     'default': {
-        # 数据库引擎配置
         'ENGINE': 'django.db.backends.mysql',
-        # 数据库名字
-        'NAME': 'vote',
-        # 数据库服务器的ip地址
-        'HOST' : 'localhost',
-        # 启动数据库服务的端口号
-        'PORT' : 3306,
-        # 数据库用户名和口令
-        'USER' : 'miku',
-        'PASSWORD' : 'ckp123456',
-        # 数据库使用的字符集
-        'CHARSET' : 'utf8',
-        # 数据库时间日期和时区设定
-        'TIME_ZONE' : 'Asia/Shanghai',
+        'NAME': os.getenv('DB_NAME', 'vote'),
+        'HOST': os.getenv('DB_HOST', 'localhost'),
+        'PORT': int(os.getenv('DB_PORT', '3306')),
+        'USER': os.getenv('DB_USER', 'miku'),
+        'PASSWORD': os.getenv('DB_PASSWORD', 'ckp123456'),
+        'CHARSET': 'utf8',
+        'TIME_ZONE': 'Asia/Shanghai',
     }
 }
 
@@ -130,7 +127,8 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'static'),
 ]
@@ -139,3 +137,20 @@ STATICFILES_DIRS = [
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Media files
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+# 密码哈希设置
+PASSWORD_HASHERS = [
+    'django.contrib.auth.hashers.PBKDF2PasswordHasher',
+    'django.contrib.auth.hashers.PBKDF2SHA1PasswordHasher',
+    'django.contrib.auth.hashers.Argon2PasswordHasher',
+    'django.contrib.auth.hashers.BCryptSHA256PasswordHasher',
+]
+
+# 会话设置
+SESSION_COOKIE_AGE = 86400  # 24小时
+SESSION_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_SECURE = not DEBUG
