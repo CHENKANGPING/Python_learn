@@ -4,7 +4,7 @@ from loguru import logger
 # （1）构建服务端套接字对象
 sock = socket.socket(family=socket.AF_INET,type = socket.SOCK_STREAM)
 
-sock.connect(('127.0.0.1',8898))
+sock.connect(('127.0.0.1',8890))
 
 
 while 1:
