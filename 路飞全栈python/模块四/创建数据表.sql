@@ -22,13 +22,13 @@ create table student
 
 
  -- 有约束版
+use db_day01;
 
 CREATE TABLE student(
     id int primary key auto_increment,
     name varchar(20) not null,
     gender bit default 1,
     age int,
-    birth date,
-    gpa double(8,2) unsigned
-)character set=uft8;
+    birth date
+)character set=utf8;
 
