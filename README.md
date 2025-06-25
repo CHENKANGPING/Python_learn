@@ -1,1 +1,3 @@
-[![Anurag's GitHub stats](https://github-readme-stats.vercel.app/api?username=CHENGKANGPING)](https://github.com/anuraghazra/github-readme-stats)
+<div align="center">
+  <img src="https://github-readme-stats.vercel.app/api?username=CHENKANGPING&show_icons=true&theme=transparent" /> 
+</div>
