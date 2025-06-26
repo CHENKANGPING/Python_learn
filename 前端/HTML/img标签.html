@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <!--img:英文全称代表一张图片-->
+    <img src="图片额url" />
+    <!--能插入的图片类型是：jpg，gif，png，bmp
+    html页面不是直接插入图片，而是插入图片的引用地址。-->
+    <!--src属性相对路径,绝对路径-->
+    <!-- 相对路径 -->
+    <!-- 当前目录中的图片-->
+      <img src="2.jpg">
+      <img src="./2.jpg">
+
+    <!-- 上一级目录中的图片 -->
+     <img src="../2.jpg">
+     <img src="images/1.jpg">
+    
+    <!-- 绝对路径 -->
+    <!-- 盘符开始的绝对路径 -->
+     <img src="C:\.........">
+    <!-- 网络路径 -->
+     <img src="http://......">
+
+    <!-- 相对路径：从自己出发，找到别人-->
+    <!-- 绝对路径：就是http://或https://开头的路径 -->
+
+    <!--width,height 属性
+        width：图像的宽度
+        height：图像的高度-->
+    
+    <!-- alt属性 -->
+    <!-- alt: 当图片不可用的时候，代替图片显示的内容-->
+    
+     <img src="images/22.jpg" width="300" height="188" alt="zj">
+
+    <!-- titles属性 title 提示性文本，鼠标悬停时出现的文本 -->
+     <img src="images/1.jpg" width="300" height="`188" title="这是美女">
+     
+    <!--align属性：图片和周围文字的相对位置。
+        bottom：图片和文字底端对齐
+        center：图片和文字水平方向上居中对齐
+        top： 图片与文字顶端对齐
+        left：图片在文字的左边
+        right：图片在文字的右边
+        -->
+    
+</body>
+</html>
