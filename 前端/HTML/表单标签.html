@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <!--表单标签用<form>表示，用于与服务器的交互。表单就是收集用户信息的，就是让用户填写的、选择的。
+        属性：
+        name：表单的名称，用于JS来操作或控制表单时使用；
+        id：表单的名称，用于JS来操作或控制表单时使用；
+        action：指定表单数据的处理程序，一般是PHP，如：action=“login.php”
+        method：表单数据的提交方式，一般取值：get(默认)和post-->
+
+
+    <!--<input>:输入标签
+    属性：
+        text
+        password
+        radio:单选按钮
+        checkbox：多选按钮
+        hiiden：隐藏框
+        button：普通按钮
+        submit：提交按钮
+        reset：重置按钮
+        image：图片按钮
+        file：文件选择框
+        value="内容"：文本框里的默认内容
+        size="50":表示文本框内可以显示五十个字符。一个英文或一个中文都算一个字符。 注意size属性值的单位不是像素
+        readonly：文本框只读，不能编辑。因为它的属性值也是readonly，所以属性值可以不写。
+        disabled：文本框只读，不能编辑，光标点不进去。属性值可以不写。-->
+        
+    <form>
+            姓名：<input value="呵呵">逗比<br>
+            昵称：<input value="哈哈" readonly=" "><br>
+            名字：<input type="text" value="name" disabled=" "><br>
+            密码：<input type="password" value="pwd" size="50"><br>
+            性别：<input type="radio" name="gender" id="radio1" value="male" checked="">男
+                    <input type="radio" name="gender" id="radio2" value="female" >女<br>
+                
+            爱好：<input type="checkbox" name="love" value="eat" > 吃饭
+                    <input type="checkbox" name="love"  value="sleep" > 睡觉
+                    <input type="checkbox" name="love" value="bat" > 打豆豆
+    </form>
+
+    <!--<select>:下拉列表标签
+        <select>标签里面的每一项用<option>表示。select就是“选择”，option“选项”。
+        属性：
+        multiple：可以对下拉列表中的选项进行多选。属性值为 multiple，也可以没有属性值。也就是说，既可以写成 multiple=""，也可以写成multiple="multiple"。
+        size="3"：如果属性值大于1，则列表为滚动视图。默认属性值为1，即下拉视图。-->
+    
+
+    <form>
+            <select>
+                    <option>小学</option>
+                    <option>初中</option>
+                    <option>高中</option>
+                    <option>大学</option>
+                        <option selected="">研究生</option>
+            </select>
+            <br><br><br>
+
+            <select size="3">
+                    <option>小学</option>
+                    <option>初中</option>
+                    <option>高中</option>
+                    <option>大学</option>
+                    <option>研究生</option>
+            </select>
+            <br><br><br>
+
+            <select multiple="">
+                    <option>小学</option>
+                    <option>初中</option>
+                    <option selected="">高中</option>
+                    <option selected="">大学</option>
+                    <option>研究生</option>
+
+
+            </select>
+            <br><br><br>
+
+
+    </form>
+
+    <!--<textarea>标签：多行输入文本框
+        text就是文本，area就是区域
+        属性：
+           rows="4"：指定文本区域的行数。
+           cols="20"：指定文本区域的列数。
+           readonly：只读。-->
+    
+
+    <form>
+
+        <textarea name="txtInfo" rows="4" cols="20">1、不爱摄影不懂设计的程序猿不是一个好的产品经理。</textarea>
+
+    </form>
+
+
+    <!--表单的语义化
+    我们在注册一个网站的信息的时候，有一部分是必填信息，有一部分是选填信息，这个时候可以利用表单的语义化-->
+
+    <form>	<form>
+
+		<fieldset>
+		<legend>账号信息</legend>
+		姓名：<input value="呵呵" >逗比<br>
+		密码：<input type="password" value="pwd" size="50"><br>
+		</fieldset>
+
+		<fieldset>
+		<legend>其他信息</legend>
+		性别：<input type="radio" name="gender" value="male" checked="">男
+			  <input type="radio" name="gender" value="female" >女<br>
+		爱好：<input type="checkbox" name="love" value="eat">吃饭
+			  <input type="checkbox" name="love" value="sleep">睡觉
+			  <input type="checkbox" name="love" value="bat">打豆豆
+		</fieldset>
+
+	</form>
+
+		<fieldset>
+		<legend>账号信息</legend>
+		姓名：<input value="呵呵" >逗比<br>
+		密码：<input type="password" value="pwd" size="50"><br>
+		</fieldset>
+
+		<fieldset>
+		<legend>其他信息</legend>
+		性别：<input type="radio" name="gender" value="male" checked="">男
+			  <input type="radio" name="gender" value="female" >女<br>
+		爱好：<input type="checkbox" name="love" value="eat">吃饭
+			  <input type="checkbox" name="love" value="sleep">睡觉
+			  <input type="checkbox" name="love" value="bat">打豆豆
+		</fieldset>
+
+	</form>
+
+    
+</body>
+</html>
