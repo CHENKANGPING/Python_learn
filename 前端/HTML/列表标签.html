@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <!--无序列表<ul>无序列表中的每一项是<li>-->
+        <ul>
+                <li>默认1</li>
+                <li>默认2</li>
+                <li>默认3</li>
+
+
+        </ul>
+        <!--li不能单独存在，必须包裹在ul中-->
+        <!--属性：disc实心原点，square实心方点，circle空心圆-->
+        <!--列表之间可以嵌套-->
+        <ul>
+            <li><b>北京市</b>
+                    <ul>
+                            <li>海淀区</li>
+                            <li>东城区</li>
+                            <li>朝阳区</li>
+                    </ul>
+            </li>
+
+            <li><b>广州市</b>
+                    <ul>
+                            <li>天河区</li>
+                            <li>越秀区</li>
+                            
+                    </ul>
+
+            </li>
+        </ul>
+
+        <!--有序列表<ol>,里面的每一项是<li>-->
+        <ol>
+            <li>呵呵1</li>
+            <li>呵呵2</li>
+            <li>呵呵3</li>
+        </ol>
+        <!--属性可是是1,a,A,i,I 结合start属性表示从几开始-->
+        <ol type="1">
+                <li>1</li>
+                <li>2</li>
+                <li>3</li>
+        </ol>
+
+        <ol type="a">
+            <li>1</li>
+            <li>2</li>
+            <li>3</li>
+                
+
+        </ol>
+
+        <ol type="i" start="4">
+                <li>1</li>
+                <li>2</li>
+                <li>3</li>
+        </ol>
+
+        <!--定义列表
+        <dl>:没有属性，dl的子元素只能是dt和dd
+        <dt>:列表的标题，这个标签是必须的
+        <dd>:列表的列表项，如果不需要可以不加-->
+
+        <dl>
+            <dt>第一条</dt>
+            <dd>你若是觉得你有实力和我玩，良辰不介意奉陪到底</dd>
+            <dd>我会让你明白，我从不说空话</dd>
+            <dd>我是本地的，我有一百种方式让你呆不下去；而你，无可奈何</dd>
+
+            <dt>第二条</dt>
+            <dd>良辰最喜欢对那些自认能力出众的人出手</dd>
+            <dd>你可以继续我行我素，不过，你的日子不会很舒心</dd>
+            <dd>你只要记住，我叫叶良辰</dd>
+            <dd>不介意陪你玩玩</dd>
+            <dd>良辰必有重谢</dd>
+
+        </dl>
+
+        <dl>
+                <dt>购物指南</dt>
+                <dd>
+                        <a href="#">购物流程</a>
+                        <a href="#">会员介绍</a>
+                </dd>
+        </dl>
+        <dl>
+                <dt>配送方式</dt>
+                <dd>
+                        <a href="#">上门自取</a>
+                        <a href="#">211限时达</a>
+                </dd>
+        </dl>
+</body>
+</html>
