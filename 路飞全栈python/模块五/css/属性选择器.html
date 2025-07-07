@@ -4,20 +4,63 @@
     <meta charset="UTF-8">
     <title>Title</title>
   <style>
-    .c1{
-      color: red;
-      background-color: #336699;
+    /*.c1{*/
+    /*  color: red;*/
+    /*  background-color: #336699;*/
+    /*}*/
+    /*.c2{*/
+    /*  font-size: 32px;*/
+    /*  font-style: italic;*/
+    /*}*/
+
+    /*属性选择器*/
+    [type="text"]{
+        border: 1px solid red;
     }
-    .c2{
-      font-size: 32px;
-      font-style: italic;
+    div [k1="v1"]{
+        color: brown;
+    }
+
+    [href$=".png"]{
+        color: red;
+    }
+
+    [class*="col-md-"]{
+        border: 1px solid red;
+    }
+
+    [class~="c3"]{
+        color: red;
     }
   </style>
 </head>
 <body>
 
-<div class="c1">ckp</div>
-<div class="c1 c2">ckp</div>
+<!--<div class="c1">ckp</div>-->
+<!--<div class="c1 c2">ckp</div>-->
+
+<input type="text">
+<input type="password">
+
+<div k1="v1">ckp</div>
+<p k1="v1">ckp</p>
+
+<div class="c1">
+    <a href="1.png">click1</a>
+    <a href="2.png">click2</a>
+    <a href="3.jpg">click3</a>
+    <a href="4.png">click4</a>
+
+</div>
+
+<div>
+    <div class="col-md-2">col-md-2</div>
+    <div class="col-md-4">col-md-4</div>
+    <div class="col-md-1">col-md-1</div>
+</div>
+
+<div class="c1 c2 c3">ckp</div>
+
 
 </body>
 </html>
