@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>大写修正</title>
+</head>
+<body>
+
+<div class="output">
+  <ul>
+
+  </ul>
+</div>
+
+</body>
+<script>
+  var list = document.querySelector('.output ul');
+list.innerHTML = '';
+var cities = ['lonDon', 'ManCHESTer', 'BiRmiNGHAM', 'liVERpoOL'];
+for(var i = 0; i < cities.length; i++) {
+  var input = cities[i];
+  var upCities = input.toLowerCase();
+  var formatted = upCities[0].toUpperCase() + upCities.slice(1);
+  var result = formatted;
+  var listItem = document.createElement('li');
+  listItem.textContent = result;
+  list.appendChild(listItem);
+}
+
+</script>
+</html>
