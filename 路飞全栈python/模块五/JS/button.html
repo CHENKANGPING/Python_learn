@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+  <style>
+    button {
+  font-family: "helvetica neue", helvetica, sans-serif;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  border: 2px solid rgb(200 200 0 / 60%);
+  background-color: rgb(0 217 217 / 60%);
+  color: rgb(100 0 0 / 100%);
+  box-shadow: 1px 1px 2px rgb(0 0 200 / 40%);
+  border-radius: 10px;
+  padding: 3px 10px;
+  cursor: pointer;
+}
+  </style>
+</head>
+<body>
+
+<button type="button">Player 1: Chris</button>
+
+
+</body>
+  <script>
+      const button = document.querySelector("button");
+
+  button.addEventListener("click", updateName);
+
+  function updateName() {
+    const name = prompt("请输入新的名字");
+    button.textContent = `Player 1: ${name}`;
+  }
+  </script>
+</html>
