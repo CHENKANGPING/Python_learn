@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+
+</body>
+<script>
+    //循环定时器
+    var id = setInterval(function (){
+        console.log("ok")
+    },1000);
+    console.log(id);
+
+    clearInterval(id)
+
+    //单次定时器
+
+    function foo(){
+        console.log("foo")
+    }
+    var ID =  window.setTimeout(foo,1000)
+
+
+
+
+
+
+</script>
+</html>
