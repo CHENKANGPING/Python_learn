@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+
+</body>
+
+<script>
+
+    //声明函数
+    /*
+    function 函数名(参数1 参数2){
+            语句体
+            return value
+
+
+    }
+    函数名(实参)
+
+    //  */
+    // function  foo(){
+    //     console.log("foo")
+    // }
+    // foo()
+
+    // function foo (x,y){
+    //     console.log("x:",x);
+    //     console.log("y:",y);
+    //
+    // }
+    // foo(1,2)
+
+    // arguments对象
+    function add() {
+        // console.log("arguments:",arguments)
+        // console.log(x+y)
+        var ret = 0;
+        for (var i in arguments){
+            ret +=arguments[i]
+        }
+        console.log(ret)
+    }
+    add(2,4,5)
+
+</script>
+</html>
