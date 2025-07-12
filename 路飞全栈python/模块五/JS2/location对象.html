@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+
+<button onclick="foo()">页面跳转</button>
+<button onclick="bar()">页面刷新</button>
+
+</body>
+<script>
+
+    console.log(location);
+    // URL完整信息
+    console.log(location.href)
+
+    // 域名端口
+   console.log(location.host);
+
+    //域名和端口
+    console.log(location.hostname);
+    console.log(location.port);
+
+    //路径
+    console.log(location.pathname);
+
+   // get参数
+    console.log(location.search);
+
+    function foo(){
+        // location.href = "http://www.baidu.com"
+        location.assign("http://www.baidu.com")
+    }
+
+    function bar(){
+        location.reload()
+    }
+
+
+
+</script>
+</html>
