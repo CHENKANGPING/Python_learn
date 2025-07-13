@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+
+<div onclick="foo(this)">click</div>
+<p id="i1">ppp</p>
+
+<ul class="lis">
+
+    <li>111</li>
+    <li>222</li>
+    <li>333</li>
+
+</ul>
+
+</body>
+<script>
+    function foo(self){
+        // alert(123);
+        // var p = document.querySelector("#i1");
+        // console.log(p.innerHTML);
+        console.log(self.innerHTML)
+    }
+
+
+    // 动态绑定
+    /*
+    dom对象.on事件 = funciton(){
+           //事件触发代码
+           事件函数中的this代指的是触发事件的标签
+    }
+     */
+    var ele = document.getElementById("i1");
+    ele.onclick = function (){
+        // alert(123);
+        console.log(this);
+    }
+
+    // 循环绑定事件
+    var lis = document.querySelectorAll(".lis li")
+    for (var i = 0; i<lis.length; i++){
+        console.log(lis[i]);
+        lis[i].onclick = function (){
+            console.log(this.innerHTML);
+
+        }
+    }
+
+</script>
+</html>
