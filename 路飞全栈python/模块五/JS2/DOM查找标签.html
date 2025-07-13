@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+
+<div id="i1">div1</div>
+
+<div class="c1">div</div>
+<div class="c1">div</div>
+<div class="c1">div</div>
+<div class="c1">div</div>
+
+<div class="outer">
+    <div class="c1">item</div>
+</div>
+
+
+<div class="c2">
+    <div class="c3">
+        <ul class="c4">
+            <li class="c5" id="i2">111</li>
+            <li>222</li>
+            <li>333</li>
+        </ul>
+    </div>
+</div>
+
+</body>
+
+<script>
+    //直接查找
+    var ele = document.getElementById("i1"); //ele 就是一个dom对象
+    console.log(ele);
+
+    var eles = document.getElementsByClassName("c1"); //eles是一个数组
+    console.log(eles);
+
+    var eles2 = document.getElementsByTagName("div");
+    console.log(eles2);
+
+
+    var outer = document.getElementsByClassName("outer")[0];
+    var te  = outer.getElementsByClassName("c1");
+    console.log(te);
+
+
+    //导航查找
+     var c5 = document.getElementsByClassName("c5")[0];
+     console.log(c5); //DOM对象
+     console.log(c5.parentElement.lastElementChild);
+     console.log(c5.parentElement.children);
+     console.log(c5.nextElementSibling.nextElementSibling);
+
+
+</script>
+
+</html>
