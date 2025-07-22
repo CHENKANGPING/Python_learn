@@ -1,9 +1,9 @@
 <script setup>
-import Syntax from "./components/Syntax.vue";
+import Watch from "./components/Watch.vue";
 </script>
 
 <template>
-<Syntax></Syntax>
+<Watch></Watch>
 </template>
 
 <style scoped>
