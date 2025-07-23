@@ -196,7 +196,7 @@ app = Flask(__name__)
 @app.route("/show/info")
 def index():
     # 默认去当前目录的 templates 文件夹中找
-    return render_template("index.html")
+    return render_template("按钮.html")
 
 ## 新添加如下配置
 @app.route("/get/news")
@@ -317,7 +317,7 @@ app = Flask(__name__)
 @app.route("/show/info")
 def index():
     # 默认去当前目录的 templates 文件夹中找
-    return render_template("index.html")
+    return render_template("按钮.html")
 
 @app.route("/get/news")
 def get_news():
