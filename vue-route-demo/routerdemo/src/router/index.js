@@ -35,11 +35,20 @@ const router = createRouter({
       path: '/',
       name: 'home',
       component: HomeView,
+      meta: {
+        requireAuth: false
+      }
     },
     {
       path: '/about',
       name: 'about',
       component: () => import('../views/AboutView.vue'),
+      meta: {
+        requireAuth: true
+      }
+      // beforeEnter: (to, from) => {
+      //   return false
+      // }
     },
     {
       path: '/news',
@@ -49,16 +58,44 @@ const router = createRouter({
         {
           path: 'detail/:pk',
           name: 'news-detail',
-          component: () => import('../views/news/NewsDetialView.vue'),
+          component: () => import('../views/news/NewsDetialView.vue')
         },
         {
           path: 'pub',
           name: 'news-pub',
-          component: () => import('../views/news/NewsPublicView.vue'),
+          component: () => import('../views/news/NewsPublicView.vue')
         },
-      ],
-    },
-  ],
+        {
+          path: '/login',
+          name: 'login',
+          component: () => import('../views/LoginView.vue')
+        }
+      ]
+    }
+  ]
+})
+
+// 全局导航守卫
+// let isAuthenticated = true;
+// router.beforeEach((to, from) => {
+//   // 如果没有权限，就不能跳转，要转回登录页面
+//   if (!isAuthenticated && to.name != 'login') {
+//     return { name: 'login' }
+//   }
+// })
+// router.afterEach((to,from) =>{
+//   console.log(to);
+//   console.log(from);
+// })
+
+let isAuthenticated = false;
+router.beforeEach((to, from) => {
+  // 如果没有权限，就不能跳转，要转回登录页面
+  if(to.meta.requireAuth==true && !isAuthenticated && to.name != 'login'){
+    return {
+      name:'login'
+    }
+  }
 })
 
 export default router
