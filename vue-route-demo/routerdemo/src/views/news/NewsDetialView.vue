@@ -1,6 +1,6 @@
 <script setup>
 import { onMounted, onUpdated } from 'vue';
-import { useRoute } from 'vue-router';
+import { onBeforeRouteUpdate, useRoute, onBeforeRouteLeave } from 'vue-router'
 
 const route = useRoute();
 
@@ -12,6 +12,11 @@ onMounted(() => {
 onUpdated(() => {
   const params = route.params
   console.log('updated:',params);
+})
+
+onBeforeRouteUpdate((to,from) =>{
+  console.log(to);
+  console.log(from);
 })
 </script>
 
