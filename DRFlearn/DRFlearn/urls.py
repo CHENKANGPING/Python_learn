@@ -19,5 +19,7 @@ from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('meituan/', include('quickstart.urls')),
+    # path('meituan/', include('quickstart.urls')),
+    path('meituan/',include('serializeapp.urls'))
+
 ]
