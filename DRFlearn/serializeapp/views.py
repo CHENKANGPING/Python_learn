@@ -1,4 +1,4 @@
-from .seroalizers import MerchantSerializer, GoodsCategorySerializer
+from .serializers import MerchantSerializer, GoodsCategorySerializer
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from meituan.models import Merchant, GoodsCategory,Goods
