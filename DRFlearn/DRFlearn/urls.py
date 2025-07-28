@@ -17,12 +17,12 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 
-
 urlpatterns = [
     path('admin/', admin.site.urls),
     # path('meituan/', include('quickstart.urls')),
     # path('meituan/',include('serializeapp.urls'))
     # path('meituan/',include('classview.urls'))
-    path('meituan/', include('authpermission.urls')),
+    # path('meituan/', include('authpermission.urls')),
+    path('meituan/', include('paginationview.urls')),
 
 ]
