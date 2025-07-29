@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import OAUser, UserStatusChoices
+from .models import OAUser, UserStatusChoices, OADepartment
 
 
 class LoginSerializer(serializers.Serializer):
@@ -27,3 +27,16 @@ class LoginSerializer(serializers.Serializer):
         else:
             raise serializers.ValidationError('请传入邮箱和密码！')
         return attrs
+
+class DepartmentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = OADepartment
+        fields = '__all__'
+
+
+class UserSerializer(serializers.ModelSerializer):
+    department = DepartmentSerializer()
+    class Meta:
+        model = OAUser
+        # fields = "__all__"
+        exclude = ('password','groups','user_permissions')
