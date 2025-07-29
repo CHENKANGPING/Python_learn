@@ -503,5 +503,536 @@ python manage.py inituser.py
 
 ![image-20250728170212566](C:\Users\ArT\AppData\Roaming\Typora\typora-user-images\image-20250728170212566.png)
 
+## 8.登录功能实现
+
+### 8.1在oaauth下创建`authentications.py`用来实现JWT认证
+
+```python
+import jwt
+from django.conf import settings
+from rest_framework.authentication import BaseAuthentication,get_authorization_header
+from rest_framework import exceptions
+from django.contrib.auth import get_user_model
+from jwt.exceptions import ExpiredSignatureError
+MTUser = get_user_model()
+import time
+from .models import OAUser
+
+def generate_jwt(user):
+    expire_time = int(time.time() + 60*60*24*7)
+    return jwt.encode({"userid":user.pk,"exp":expire_time},key=settings.SECRET_KEY)
+
+class JWTAuthentication(BaseAuthentication):
+    """
+    Authorization: JWT 401f7ac837da42b97f613d789819ff93537bee6a
+    """
+
+    keyword = 'JWT'
+    model = None
+
+    def authenticate(self, request):
+        auth = get_authorization_header(request).split()
+
+        if not auth or auth[0].lower() != self.keyword.lower().encode():
+            return None
+
+        if len(auth) == 1:
+            msg = 'Authorization不可用！'
+            raise exceptions.AuthenticationFailed(msg)
+        elif len(auth) > 2:
+            msg = 'Authorization不可用！应该提供一个空格！'
+            raise exceptions.AuthenticationFailed(msg)
+
+        try:
+            jwt_token = auth[1]
+            jwt_info = jwt.decode(jwt_token, settings.SECRET_KEY, algorithms="HS256")
+            userid = jwt_info.get('userid')
+            try:
+                user = OAUser.objects.get(pk=userid)
+                return (user, jwt_token)
+            except Exception:
+                msg = '用户不存在！'
+                raise exceptions.AuthenticationFailed(msg)
+        except UnicodeError:
+            msg = 'token格式错误！'
+            raise exceptions.AuthenticationFailed(msg)
+        except jwt.ExpiredSignatureError:
+            msg = 'token已过期！'
+            raise exceptions.AuthenticationFailed(msg)
+```
+
+### 8.2在oaauth下的`Views.py`下实现登录功能
+
+```python
+from datetime import datetime
+
+from django.shortcuts import render
+from rest_framework import status
+from rest_framework.views import APIView
+from .serializers import LoginSerializer
+from .authentications import generate_jwt
+from rest_framework.response import Response
+
+class LoginView(APIView):
+    def post(self, request):
+        # 1.验证数据是否可用
+        serializer = LoginSerializer(data=request.data)
+        if serializer.is_valid():
+            user = serializer.validated_data.get('user')
+            user.last_login = datetime.now()
+            user.save()
+            token = generate_jwt(user)
+            return Response({'token': token})
+        else:
+            print(serializer.errors)
+            return Response({"message": "参数验证失败！"},status=status.HTTP_400_BAD_REQUEST)
 
 
+```
+
+### 8.3配置路由
+
+在oaauth下创建`urls.py`
+
+```python
+from django.urls import path
+from . import  views
+
+app_name = 'oaauth'
+
+urlpatterns = [
+    path('login', views.LoginView.as_view(), name='login'),
+]
+```
+
+在主路由下
+
+```python
+from django.contrib import admin
+from django.urls import path,include
+
+urlpatterns = [
+    path('admin/', admin.site.urls),
+    path('auth/', include('apps.oaauth.urls')),
+]
+
+```
+
+### 8.4Postman验证
+
+![image-20250729095055639](C:\Users\ArT\AppData\Roaming\Typora\typora-user-images\image-20250729095055639.png)![image-20250729095036407](C:\Users\ArT\AppData\Roaming\Typora\typora-user-images\image-20250729095036407.png)
+
+## 9.返回用户信息
+
+### 9.1序列化OAUser模型的数据，嵌套序列化用户的部门信息，排除敏感字段
+
+```python
+class DepartmentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = OADepartment
+        fields = '__all__'
+
+
+class UserSerializer(serializers.ModelSerializer):
+    department = DepartmentSerializer()
+    class Meta:
+        model = OAUser
+        # fields = "__all__"
+        exclude = ('password','groups','user_permissions')
+```
+
+### 9.2Postman验证
+
+![image-20250729100628515](C:\Users\ArT\AppData\Roaming\Typora\typora-user-images\image-20250729100628515.png)
+
+## 10.创建前端项目
+
+### 10.1创建项目
+
+在该项目的存放文件下进入`cmd`
+
+```bash
+npm create vue@3.10.3
+```
+
+![image-20250729101309241](C:\Users\ArT\AppData\Roaming\Typora\typora-user-images\image-20250729101309241.png)
+
+## 11.frame和login结构搭建
+
+### 11.1删除不必要的页面和创建`login.vue`和`frame.vue`
+
+![image-20250729103905207](C:\Users\ArT\AppData\Roaming\Typora\typora-user-images\image-20250729103905207.png)
+
+### 11.2安装vite-plugin-vue-setup-extend
+
+```bash
+npm install vite-plugin-vue-setup-extend --save-dev
+```
+
+配置:在`vite.config.js`中配置
+
+```js
+import VueSetupExtend from 'vite-plugin-vue-setup-extend'
+
+// https://vitejs.dev/config/
+export default defineConfig({
+  plugins: [
+    vue(),
+    VueSetupExtend()
+  ],
+})
+```
+
+### 11.3在router下`index.js`的路由配置
+
+```js
+import { createRouter, createWebHashHistory } from 'vue-router'
+import login from '../views/login/login.vue'
+import frame from '../views/main/frame.vue'
+
+const router = createRouter({
+  history: createWebHashHistory(import.meta.env.BASE_URL),
+  routes: [
+    {
+      path: '/',
+      name: 'frame',
+      component: frame
+    },
+    {
+      path: '/login',
+      name: 'login',
+      component: login
+    }
+  ]
+})
+
+export default router
+
+```
+
+## 12.登录页面实现
+
+### 12.1将`css` `img`等文件放入`assets`中
+
+![image-20250729111732749](C:\Users\ArT\AppData\Roaming\Typora\typora-user-images\image-20250729111732749.png)
+
+### 12.2在`login.vue`中添加`HTML`
+
+```html
+<div class="dowebok">
+        <div class="container-login100">
+            <div class="wrap-login100">
+                <div class="login100-pic js-tilt" data-tilt>
+                    <img :src="login_img" alt="IMG" />
+                </div>
+
+                <div class="login100-form validate-form">
+                    <span class="login100-form-title"> 员工登陆 </span>
+
+                    <div class="wrap-input100 validate-input">
+                        <input class="input100" type="text" name="email" placeholder="邮箱" />
+                        <span class="focus-input100"></span>
+                        <span class="symbol-input100">
+                            <i class="iconfont icon-fa-envelope" aria-hidden="true"></i>
+                        </span>
+                    </div>
+
+                    <div class="wrap-input100 validate-input">
+                        <input class="input100" type="password" name="password" placeholder="密码" />
+                        <span class="focus-input100"></span>
+                        <span class="symbol-input100">
+                            <i class="iconfont icon-fa-lock" aria-hidden="true"></i>
+                        </span>
+                    </div>
+
+                    <div class="container-login100-form-btn">
+                        <button class="login100-form-btn">
+                            登陆
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+```
+
+### 12.4在`VUE`中添加外部`css`
+
+```vue
+<style scoped src="@/assets/css/login.css"></style>
+<style scoped src="@/assets/iconfont/iconfont.css"></style>
+```
+
+### 12.7解决浏览器自带样式
+
+在`APP.vue`下进行修改
+
+```vue
+<style>
+*{
+  margin: 0;
+  padding: 0;
+}
+</style>
+
+```
+
+
+
+### 12.6启动`VUE`浏览界面
+
+```bash
+npm run dev
+```
+
+![image-20250729112133008](C:\Users\ArT\AppData\Roaming\Typora\typora-user-images\image-20250729112133008.png)
+
+## 13.前段登录功能实现
+
+### 13.1安装axios
+
+```bash
+npm install axios@1.6.8
+```
+
+### 13.2修改`login.vue`
+
+```vue
+<script setup name="login">
+import login_img from '@/assets/image/login.jpg'
+import { reactive } from 'vue';
+import axios from 'axios';
+
+let form = reactive({
+    email: '',
+    password: ''
+})
+
+const onSubmit = () => {
+    let pwdRgx = /^[0-9a-zA-Z]{6,20}/
+    let emailRgx = /^[a-zA-Z0-9_-]+@[a-zA-Z0-9_-]+(.[a-zA-Z0-9]+)+/
+    if(!(emailRgx.test(form.email))){
+        alert('邮箱格式错误');
+        return;
+    }
+    if(!(pwdRgx.test(form.password))){
+        alert('密码格式错误');
+        return;
+    }
+    // axios
+    // promise
+    axios.post("http://127.0.0.1:8000/auth/login",{
+        email: form.email,
+        password: form.password
+    }).then(res => {
+        // then:代表成功的情况（在这里，代表返回的状态码200）
+        let data = res.data;
+        let token = data.token;
+        let user = data.user;
+        console.log(token);
+        console.log(user);
+        
+    }).catch((err) =>{
+        // catch:代表失败的情况（在这里，代表返回的状态码不是200）
+        let detail = err.response.data.detail
+        alert(detail)
+    })
+}
+
+</script>
+
+<template>
+    <div class="dowebok">
+        <div class="container-login100">
+            <div class="wrap-login100">
+                <div class="login100-pic js-tilt" data-tilt>
+                    <img :src="login_img" alt="IMG" />
+                </div>
+
+                <div class="login100-form validate-form">
+                    <span class="login100-form-title"> 员工登陆 </span>
+
+                    <div class="wrap-input100 validate-input">
+                        <input class="input100" type="text" name="email" placeholder="邮箱" v-model="form.email" />
+                        <span class="focus-input100"></span>
+                        <span class="symbol-input100">
+                            <i class="iconfont icon-fa-envelope" aria-hidden="true"></i>
+                        </span>
+                    </div>
+
+                    <div class="wrap-input100 validate-input">
+                        <input class="input100" type="password" name="password" placeholder="密码" v-model="form.password" />
+                        <span class="focus-input100"></span>
+                        <span class="symbol-input100">
+                            <i class="iconfont icon-fa-lock" aria-hidden="true"></i>
+                        </span>
+                    </div>
+
+                    <div class="container-login100-form-btn">
+                        <button class="login100-form-btn" @click="onSubmit">
+                            登陆
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</template>
+
+<style scoped src="@/assets/css/login.css"></style>
+<style scoped src="@/assets/iconfont/iconfont.css"></style>
+
+```
+
+### 13.3浏览器验证登录
+
+输入正确的邮箱和密码，浏览器返回
+
+![image-20250729144801089](C:\Users\ArT\AppData\Roaming\Typora\typora-user-images\image-20250729144801089.png)
+
+## 14.用户和token信息管理
+
+### 14.1在stores下创建`auth.js`文件
+
+```js
+import { ref, computed } from 'vue'
+import { defineStore } from 'pinia'
+
+const USER_KEY = "OA_USER_KEY";
+const TOKEN_KEY = "OA_TOKEN_KEY";
+
+export const useAuthStore = defineStore('auth', () => {
+    let _user = ref({});
+    let _token = ref({});
+
+    function setUerToken(user, token) {
+        // 保存到对象上(内存中)
+        _user.value = user;
+        _token.value = token;
+
+        // 存储到浏览器的localStorge(硬盘上)
+        localStorage.setItem(USER_KEY, JSON.stringify(user));
+        localStorage.setItem(TOKEN_KEY, token);
+    }
+
+    // 计算属性
+    let user = computed(() => {
+        // 如果_user是一个空对象，那么就视图从localStorge中获取
+        if(!_user.value){
+            _user.value = localStorage.getItem(USER_KEY);
+        }
+        return _user.value;
+    });
+    // 计算属性
+    let token = computed(() => {
+        // 如果_token是一个空对象，那么就视图从localStorge中获取
+        if(!_token.value){
+            _token.value = localStorage.getItem(TOKEN_KEY);
+        }
+        return _token.value;
+    });
+    // 想要让外面访问，就必须要返回
+    return {setUerToken,user,token}
+})
+
+```
+
+### 14.2修改`login.vue`
+
+```vue
+<script setup name="login">
+import login_img from '@/assets/image/login.jpg'
+import { reactive } from 'vue';
+import axios from 'axios';
+import { useAuthStore } from '@/stores/auth';
+import { useRouter } from 'vue-router';
+
+const authStore = useAuthStore();
+const router = useRouter();
+
+let form = reactive({
+    email: '',
+    password: ''
+})
+
+const onSubmit = () => {
+    let pwdRgx = /^[0-9a-zA-Z]{6,20}/
+    let emailRgx = /^[a-zA-Z0-9_-]+@[a-zA-Z0-9_-]+(.[a-zA-Z0-9]+)+/
+    if(!(emailRgx.test(form.email))){
+        alert('邮箱格式错误');
+        return;
+    }
+    if(!(pwdRgx.test(form.password))){
+        alert('密码格式错误');
+        return;
+    }
+    // axios
+    // promise
+    axios.post("http://127.0.0.1:8000/auth/login",{
+        email: form.email,
+        password: form.password
+    }).then(res => {
+        // then:代表成功的情况（在这里，代表返回的状态码200）
+        let data = res.data;
+        let token = data.token;
+        let user = data.user;
+        authStore.setUerToken(user,token);
+        // 登陆成功，跳转到OA系统的首页
+        router.push({name:"frame"});
+    }).catch((err) =>{
+        // catch:代表失败的情况（在这里，代表返回的状态码不是200）
+        let detail = err.response.data.detail
+        alert(detail)
+    })
+}
+
+</script>
+
+<template>
+    <div class="dowebok">
+        <div class="container-login100">
+            <div class="wrap-login100">
+                <div class="login100-pic js-tilt" data-tilt>
+                    <img :src="login_img" alt="IMG" />
+                </div>
+
+                <div class="login100-form validate-form">
+                    <span class="login100-form-title"> 员工登陆 </span>
+
+                    <div class="wrap-input100 validate-input">
+                        <input class="input100" type="text" name="email" placeholder="邮箱" v-model="form.email" />
+                        <span class="focus-input100"></span>
+                        <span class="symbol-input100">
+                            <i class="iconfont icon-fa-envelope" aria-hidden="true"></i>
+                        </span>
+                    </div>
+
+                    <div class="wrap-input100 validate-input">
+                        <input class="input100" type="password" name="password" placeholder="密码" v-model="form.password" />
+                        <span class="focus-input100"></span>
+                        <span class="symbol-input100">
+                            <i class="iconfont icon-fa-lock" aria-hidden="true"></i>
+                        </span>
+                    </div>
+
+                    <div class="container-login100-form-btn">
+                        <button class="login100-form-btn" @click="onSubmit">
+                            登陆
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</template>
+
+<style scoped src="@/assets/css/login.css"></style>
+<style scoped src="@/assets/iconfont/iconfont.css"></style>
+
+```
+
+成功登录后会跳转到frame页面
+
+![image-20250729152352060](C:\Users\ArT\AppData\Roaming\Typora\typora-user-images\image-20250729152352060.png)
+
+![image-20250729152404311](C:\Users\ArT\AppData\Roaming\Typora\typora-user-images\image-20250729152404311.png)

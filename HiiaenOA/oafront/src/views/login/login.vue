@@ -1,7 +1,12 @@
 <script setup name="login">
 import login_img from '@/assets/image/login.jpg'
 import { reactive } from 'vue';
-import axios from 'axios';
+import { useAuthStore } from '@/stores/auth';
+import { useRouter } from 'vue-router';
+import authHttp from '@/api/authHttp';
+
+const authStore = useAuthStore();
+const router = useRouter();
 
 let form = reactive({
     email: '',
@@ -21,17 +26,29 @@ const onSubmit = () => {
     }
     // axios
     // promise
-    axios.post("http://127.0.0.1:8000/auth/login",{
-        email: form.email,
-        password: form.password
-    }).then(res => {
-        // then:代表成功的情况（在这里，代表返回的状态码200）
-        let data = res.data;
+    // axios.post("http://127.0.0.1:8000/auth/login",{
+    //     email: form.email,
+    //     password: form.password
+    // }).then(res => {
+    //     // then:代表成功的情况（在这里，代表返回的状态码200）
+    //     let data = res.data;
+    //     let token = data.token;
+    //     let user = data.user;
+    //     authStore.setUerToken(user,token);
+    //     // 登陆成功，跳转到OA系统的首页
+    //     router.push({name:"frame"});
+    // }).catch((err) =>{
+    //     // catch:代表失败的情况（在这里，代表返回的状态码不是200）
+    //     let detail = err.response.data.detail
+    //     alert(detail)
+    // })
+    authHttp.login(form.email,form.password).then(res => {
+         let data = res.data;
         let token = data.token;
         let user = data.user;
-        console.log(token);
-        console.log(user);
-        
+        authStore.setUerToken(user,token);
+        // 登陆成功，跳转到OA系统的首页
+        router.push({name:"frame"});
     }).catch((err) =>{
         // catch:代表失败的情况（在这里，代表返回的状态码不是200）
         let detail = err.response.data.detail
