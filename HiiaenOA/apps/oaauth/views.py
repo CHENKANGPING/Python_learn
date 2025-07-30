@@ -19,5 +19,5 @@ class LoginView(APIView):
             token = generate_jwt(user)
             return Response({'token': token,'user': UserSerializer(user).data})
         else:
-            print(serializer.errors)
-            return Response({"detail": "参数验证失败！"}, status=status.HTTP_400_BAD_REQUEST)
+            detial = list(serializer.errors.values())[0][0]
+            return Response({"detail": detial}, status=status.HTTP_400_BAD_REQUEST)
