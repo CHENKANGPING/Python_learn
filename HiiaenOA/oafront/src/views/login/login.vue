@@ -4,6 +4,7 @@ import { reactive } from 'vue';
 import { useAuthStore } from '@/stores/auth';
 import { useRouter } from 'vue-router';
 import authHttp from '@/api/authHttp';
+import { ElMessage } from 'element-plus';
 
 const authStore = useAuthStore();
 const router = useRouter();
@@ -13,19 +14,22 @@ let form = reactive({
     password: ''
 })
 
-const onSubmit = () => {
+const onSubmit = async () => {
     let pwdRgx = /^[0-9a-zA-Z]{6,20}/
     let emailRgx = /^[a-zA-Z0-9_-]+@[a-zA-Z0-9_-]+(.[a-zA-Z0-9]+)+/
     if(!(emailRgx.test(form.email))){
-        alert('邮箱格式错误');
+        // alert('邮箱格式错误');
+        ElMessage.info('邮箱格式错误');
         return;
     }
     if(!(pwdRgx.test(form.password))){
-        alert('密码格式错误');
+        // alert('密码格式错误');
+        ElMessage.info('密码格式错误');
         return;
     }
     // axios
     // promise
+    // 第一个版本，直接使用axios
     // axios.post("http://127.0.0.1:8000/auth/login",{
     //     email: form.email,
     //     password: form.password
@@ -42,18 +46,33 @@ const onSubmit = () => {
     //     let detail = err.response.data.detail
     //     alert(detail)
     // })
-    authHttp.login(form.email,form.password).then(res => {
-         let data = res.data;
+    
+    // 第二个版本，对axios进行了一层封装
+    // authHttp.login(form.email,form.password).then(res => {
+    //      let data = res.data;
+    //     let token = data.token;
+    //     let user = data.user;
+    //     authStore.setUerToken(user,token);
+    //     // 登陆成功，跳转到OA系统的首页
+    //     router.push({name:"frame"});
+    // }).catch((err) =>{
+    //     // catch:代表失败的情况（在这里，代表返回的状态码不是200）
+    //     let detail = err.response.data.detail
+    //     alert(detail)
+    // })
+
+    // 第三个版本，改成了异步调用的方式
+    try{
+        let data = await authHttp.login(form.email,form.password);
         let token = data.token;
         let user = data.user;
         authStore.setUerToken(user,token);
         // 登陆成功，跳转到OA系统的首页
         router.push({name:"frame"});
-    }).catch((err) =>{
-        // catch:代表失败的情况（在这里，代表返回的状态码不是200）
-        let detail = err.response.data.detail
-        alert(detail)
-    })
+    }catch(detail){
+        // alert(detail)
+        ElMessage.error(detail)
+    }
 }
 
 </script>
