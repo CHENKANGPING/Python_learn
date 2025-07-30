@@ -1036,3 +1036,1362 @@ const onSubmit = () => {
 ![image-20250729152352060](C:\Users\ArT\AppData\Roaming\Typora\typora-user-images\image-20250729152352060.png)
 
 ![image-20250729152404311](C:\Users\ArT\AppData\Roaming\Typora\typora-user-images\image-20250729152404311.png)
+
+## 15.使用async和await改写Ajax请求
+
+### 15.1创建生产环境和开发环境
+
+在`vue`目录下创建`.env.development`和`.env.production`两个文件
+
+在`.env.development`下写入开发环境的URL
+
+```mariadb
+VITE_BASE_URL = "http://127.0.0.1:8000"
+```
+
+### 15.2在src下创建api文件夹，在该目录下创建`authHttp.js`和`http.js`
+
+在`http.js`下写入
+
+```js
+import axios from 'axios';
+
+class Http {
+    constructor() {
+        this.instance = axios.create({
+            baseURL: import.meta.env.VITE_BASE_URL,
+            timeout: 10000,
+        });
+    }
+
+    post(path, data) {
+        // path: /auth/login
+        // url: http://127.0.0.1:8000/auth/login
+        // return this.instance.post(path, data);
+        return new Promise(async (resolve, reject) => {
+            // 网络请求发送出去后，线程会挂起这个等待
+            // 等网络数据到达后，线程又会回到当前位置开始后执行
+            // 如果在某个函数中使用了await，那么这个函数就必须要定义成async
+            // axios底层也是使用promise对象，在响应的状态码不是200时，会调用reject
+            // 调用reject的结果是，外层的函数会抛出异常
+            try {
+                let result = await this.instance.post(path, data)
+                // 如果走到下面代码，说明上面await函数没有抛出异常，就肯定说明返回的状态码是200
+                resolve(result.data);
+            } catch (err) {
+                let detial = err.response.data.detail;
+                reject(detial)
+            }
+        })
+    }
+
+    get(path, params) {
+        return this.instance.get(path, { params });
+    }
+}
+export default new Http();
+```
+
+在`authHttp.js`下写入
+
+```js
+import http from './http';
+
+const login = (email,password) =>{
+    const path = '/auth/login';
+    return http.post(path,{email,password});
+}
+export default {
+    login,
+}
+```
+
+### 15.3优化`login.vue`
+
+```vue
+<script setup name="login">
+import login_img from '@/assets/image/login.jpg'
+import { reactive } from 'vue';
+import { useAuthStore } from '@/stores/auth';
+import { useRouter } from 'vue-router';
+import authHttp from '@/api/authHttp';
+
+const authStore = useAuthStore();
+const router = useRouter();
+
+let form = reactive({
+    email: '',
+    password: ''
+})
+
+const onSubmit = async () => {
+    let pwdRgx = /^[0-9a-zA-Z]{6,20}/
+    let emailRgx = /^[a-zA-Z0-9_-]+@[a-zA-Z0-9_-]+(.[a-zA-Z0-9]+)+/
+    if(!(emailRgx.test(form.email))){
+        alert('邮箱格式错误');
+        return;
+    }
+    if(!(pwdRgx.test(form.password))){
+        alert('密码格式错误');
+        return;
+    }
+    // axios
+    // promise
+    // 第一个版本，直接使用axios
+    // axios.post("http://127.0.0.1:8000/auth/login",{
+    //     email: form.email,
+    //     password: form.password
+    // }).then(res => {
+    //     // then:代表成功的情况（在这里，代表返回的状态码200）
+    //     let data = res.data;
+    //     let token = data.token;
+    //     let user = data.user;
+    //     authStore.setUerToken(user,token);
+    //     // 登陆成功，跳转到OA系统的首页
+    //     router.push({name:"frame"});
+    // }).catch((err) =>{
+    //     // catch:代表失败的情况（在这里，代表返回的状态码不是200）
+    //     let detail = err.response.data.detail
+    //     alert(detail)
+    // })
+    
+    // 第二个版本，对axios进行了一层封装
+    // authHttp.login(form.email,form.password).then(res => {
+    //      let data = res.data;
+    //     let token = data.token;
+    //     let user = data.user;
+    //     authStore.setUerToken(user,token);
+    //     // 登陆成功，跳转到OA系统的首页
+    //     router.push({name:"frame"});
+    // }).catch((err) =>{
+    //     // catch:代表失败的情况（在这里，代表返回的状态码不是200）
+    //     let detail = err.response.data.detail
+    //     alert(detail)
+    // })
+
+    // 第三个版本，改成了异步调用的方式
+    try{
+        let data = await authHttp.login(form.email,form.password);
+        let token = data.token;
+        let user = data.user;
+        authStore.setUerToken(user,token);
+        // 登陆成功，跳转到OA系统的首页
+        router.push({name:"frame"});
+    }catch(detail){
+        alert(detail)
+    }
+}
+
+</script>
+
+<template>
+    <div class="dowebok">
+        <div class="container-login100">
+            <div class="wrap-login100">
+                <div class="login100-pic js-tilt" data-tilt>
+                    <img :src="login_img" alt="IMG" />
+                </div>
+
+                <div class="login100-form validate-form">
+                    <span class="login100-form-title"> 员工登陆 </span>
+
+                    <div class="wrap-input100 validate-input">
+                        <input class="input100" type="text" name="email" placeholder="邮箱" v-model="form.email" />
+                        <span class="focus-input100"></span>
+                        <span class="symbol-input100">
+                            <i class="iconfont icon-fa-envelope" aria-hidden="true"></i>
+                        </span>
+                    </div>
+
+                    <div class="wrap-input100 validate-input">
+                        <input class="input100" type="password" name="password" placeholder="密码" v-model="form.password" />
+                        <span class="focus-input100"></span>
+                        <span class="symbol-input100">
+                            <i class="iconfont icon-fa-lock" aria-hidden="true"></i>
+                        </span>
+                    </div>
+
+                    <div class="container-login100-form-btn">
+                        <button class="login100-form-btn" @click="onSubmit">
+                            登陆
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</template>
+
+<style scoped src="@/assets/css/login.css"></style>
+<style scoped src="@/assets/iconfont/iconfont.css"></style>
+
+```
+
+## 16.集成ElementPlus
+
+### 16.1 安装配置ElementPlus
+
+官网：https://element-plus.org/zh-CN/
+
+```bash
+npm install element-plus --save
+```
+
+在`main.js`中配置
+
+```js
+
+import { createApp } from 'vue'
+import { createPinia } from 'pinia'
+import ElementPlus from 'element-plus'
+import 'element-plus/dist/index.css'
+
+import App from './App.vue'
+import router from './router'
+
+const app = createApp(App)
+
+app.use(createPinia())
+app.use(router)
+app.use(ElementPlus)
+
+app.mount('#app')
+
+```
+
+### 16.2使用ElementPlus
+
+在`frame.vue`下添加一个按钮
+
+```vue
+<script setup name="frame">
+
+</script>
+
+<template>
+<h1>这是frame页面</h1>
+<el-button>这是一个按钮</el-button>
+</template>
+
+<style scoped>
+
+</style>
+
+```
+
+## 17.优化登录失败提示
+
+### 17.1 替换原本的提示
+
+修改`login.vue`
+
+```vue
+import { ElMessage } from 'element-plus';
+
+const onSubmit = async () => {
+    let pwdRgx = /^[0-9a-zA-Z]{6,20}/
+    let emailRgx = /^[a-zA-Z0-9_-]+@[a-zA-Z0-9_-]+(.[a-zA-Z0-9]+)+/
+    if(!(emailRgx.test(form.email))){
+        // alert('邮箱格式错误');
+        ElMessage.info('邮箱格式错误');
+        return;
+    }
+    if(!(pwdRgx.test(form.password))){
+        // alert('密码格式错误');
+        ElMessage.info('密码格式错误');
+        return;
+    }
+    // axios
+    // promise
+    // 第一个版本，直接使用axios
+    // axios.post("http://127.0.0.1:8000/auth/login",{
+    //     email: form.email,
+    //     password: form.password
+    // }).then(res => {
+    //     // then:代表成功的情况（在这里，代表返回的状态码200）
+    //     let data = res.data;
+    //     let token = data.token;
+    //     let user = data.user;
+    //     authStore.setUerToken(user,token);
+    //     // 登陆成功，跳转到OA系统的首页
+    //     router.push({name:"frame"});
+    // }).catch((err) =>{
+    //     // catch:代表失败的情况（在这里，代表返回的状态码不是200）
+    //     let detail = err.response.data.detail
+    //     alert(detail)
+    // })
+    
+    // 第二个版本，对axios进行了一层封装
+    // authHttp.login(form.email,form.password).then(res => {
+    //      let data = res.data;
+    //     let token = data.token;
+    //     let user = data.user;
+    //     authStore.setUerToken(user,token);
+    //     // 登陆成功，跳转到OA系统的首页
+    //     router.push({name:"frame"});
+    // }).catch((err) =>{
+    //     // catch:代表失败的情况（在这里，代表返回的状态码不是200）
+    //     let detail = err.response.data.detail
+    //     alert(detail)
+    // })
+
+    // 第三个版本，改成了异步调用的方式
+    try{
+        let data = await authHttp.login(form.email,form.password);
+        let token = data.token;
+        let user = data.user;
+        authStore.setUerToken(user,token);
+        // 登陆成功，跳转到OA系统的首页
+        router.push({name:"frame"});
+    }catch(detail){
+        // alert(detail)
+        ElMessage.error(detail)
+    }
+}
+```
+
+### 17.2优化登录失败提示
+
+修改`serializers.py`
+
+```python
+class LoginSerializer(serializers.Serializer):
+    email = serializers.EmailField(required=True, error_messages={'required': '请输入邮箱！'})
+    password = serializers.CharField(max_length=20, min_length=6)
+```
+
+修改`views.py`
+
+```python
+class LoginView(APIView):
+    def post(self, request):
+        # 1.验证数据是否可用
+        serializer = LoginSerializer(data=request.data)
+        if serializer.is_valid():
+            user = serializer.validated_data.get('user')
+            user.last_login = datetime.now()
+            user.save()
+            token = generate_jwt(user)
+            return Response({'token': token,'user': UserSerializer(user).data})
+        else:
+            detial = list(serializer.errors.values())[0][0]
+            return Response({"detail": detial}, status=status.HTTP_400_BAD_REQUEST)
+
+```
+
+## 18.Frame页面结构搭建
+
+在`frame.vue`下进行搭建
+
+```vue
+<script setup name="frame">
+
+</script>
+
+<template>
+    <el-container class="container">
+        <el-aside class="aside" width="250px">
+            <router-link to="/" class="brand">Hiiaen OA</router-link>
+        </el-aside>
+        <el-container>
+            <el-header class="header">Header</el-header>
+            <el-main class="main">Main</el-main>
+        </el-container>
+    </el-container>
+</template>
+
+<style scoped>
+.aside {
+    background-color: #343a40;
+    box-shadow: 0 14px 28px rgba(0, 0, 0, .25), 0 10px 10px rgba(0, 0, 0, .22) !important;
+}
+
+.container {
+    height: 100vh;
+    background-color: #f4f6f9;
+}
+
+.aside .brand {
+    color: #fff;
+    text-decoration: none;
+    border-bottom: 1px solid #434a50;
+    background-color: #232631;
+    height: 60px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+}
+.header {
+    height: 60px;
+    background-color: #fff;
+    border-bottom: 1xp solid #e6e6e6;
+}
+</style>
+
+```
+
+效果：
+
+![image-20250730134009853](C:\Users\ArT\AppData\Roaming\Typora\typora-user-images\image-20250730134009853.png)
+
+## 19.侧栏菜单实现
+
+### 19.1修改`frame.vue`文件
+
+```vue
+<script setup name="frame">
+
+</script>
+
+<template>
+    <el-container class="container">
+        <el-aside class="aside" width="250px">
+            <router-link to="/" class="brand">Hiiaen OA</router-link>
+            <el-menu default-active="1" class="el-menu-vertical-demo" background-color="#343a40" text-color="#fff">
+                <el-menu-item index="1">
+                    <el-icon>
+                        <HomeFilled />
+                    </el-icon>
+                    <span>首页</span>
+                </el-menu-item>
+                <el-sub-menu index="2">
+                    <template #title>
+                        <el-icon>
+                            <Checked />
+                        </el-icon>
+                        <span>考勤管理</span>
+                    </template>
+                    <el-menu-item index="2-1">
+                        <el-icon>
+                            <UserFilled />
+                        </el-icon>
+                        <span>个人考勤</span>
+                    </el-menu-item>
+                    <el-menu-item index="2-2">
+                        <el-icon>
+                            <User />
+                        </el-icon>
+                        <span>下属考勤</span>
+                    </el-menu-item>
+                </el-sub-menu>
+                <el-sub-menu index="3">
+                    <template #title>
+                        <el-icon>
+                            <BellFilled />
+                        </el-icon>
+                        <span>通知管理</span>
+                    </template>
+                    <el-menu-item index="3-1">
+                        <el-icon>
+                            <BellFilled />
+                        </el-icon>
+                        <span>发布通知</span>
+                    </el-menu-item>
+                    <el-menu-item index="3-2">
+                        <el-icon>
+                            <Tickets />
+                        </el-icon>
+                        <span>通知列表</span>
+                    </el-menu-item>
+                </el-sub-menu>
+                <el-sub-menu index="4">
+                    <template #title>
+                        <el-icon>
+                            <Avatar />
+                        </el-icon>
+                        <span>员工管理</span>
+                    </template>
+                    <el-menu-item index="4-1">
+                        <el-icon>
+                            <Plus />
+                        </el-icon>
+                        <span>新增员工</span>
+                    </el-menu-item>
+                    <el-menu-item index="4-2">
+                        <el-icon>
+                            <Tickets />
+                        </el-icon>
+                        <span>员工列表</span>
+                    </el-menu-item>
+                </el-sub-menu>
+            </el-menu>
+        </el-aside>
+        <el-container>
+            <el-header class="header">Header</el-header>
+            <el-main class="main">Main</el-main>
+        </el-container>
+    </el-container>
+</template>
+
+<style scoped>
+.aside {
+    background-color: #343a40;
+    box-shadow: 0 14px 28px rgba(0, 0, 0, .25), 0 10px 10px rgba(0, 0, 0, .22) !important;
+}
+
+.container {
+    height: 100vh;
+    background-color: #f4f6f9;
+}
+
+.aside .brand {
+    color: #fff;
+    text-decoration: none;
+    border-bottom: 1px solid #434a50;
+    background-color: #232631;
+    height: 60px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+}
+
+.header {
+    height: 60px;
+    background-color: #fff;
+    border-bottom: 1xp solid #e6e6e6;
+}
+
+.el-menu {
+    border-right: none;
+}
+
+.el-menu-item,
+.el-sub-menu__title {
+    color: #fff !important;
+}
+
+.el-menu-item:hover,
+.el-sub-menu__title:hover {
+    background-color: #364781 !important;
+}
+</style>
+```
+
+### 19.2 使用icon图标
+
+安装icon包
+
+```bash
+npm install @element-plus/icons-vue
+```
+
+在`main.js`下进行配置
+
+```js
+import * as ElementPlusIconsVue from '@element-plus/icons-vue'
+
+// 注册所有图标
+for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
+    app.component(key, component)
+}
+```
+
+### 19.3侧边菜单栏效果
+
+![image-20250730145201110](C:\Users\ArT\AppData\Roaming\Typora\typora-user-images\image-20250730145201110.png)
+
+##  20.折叠和展开菜单栏功能
+
+修改`frame.vue`文件
+
+```vue
+<script setup name="frame">
+import { ref, computed } from 'vue'
+import {
+    Expand,
+    Fold,
+} from '@element-plus/icons-vue'
+
+let isCollapse = ref(false);
+let asidWidth = computed(() => {
+    if (isCollapse.value) {
+        return '64px'
+    } else {
+        return '250px'
+    }
+})
+
+const onCollapseAside = () => {
+    isCollapse.value = !isCollapse.value;
+}
+</script>
+
+<template>
+    <el-container class="container">
+        <el-aside class="aside" :width="asidWidth">
+            <router-link to="/" class="brand">
+                <strong>Hiiaen</strong>
+                <transition name="fade">
+                    <span v-show="!isCollapse" class="brand-text">OA</span>
+                </transition>
+            </router-link>
+            <el-menu 
+                default-active="1" 
+                class="el-menu-vertical-demo" 
+                background-color="#343a40" 
+                text-color="#fff"
+                :collapse="isCollapse"
+                :collapse-transition="false">
+                <el-menu-item index="1">
+                    <el-icon>
+                        <HomeFilled />
+                    </el-icon>
+                    <span>首页</span>
+                </el-menu-item>
+                <el-sub-menu index="2">
+                    <template #title>
+                        <el-icon>
+                            <Checked />
+                        </el-icon>
+                        <span>考勤管理</span>
+                    </template>
+                    <el-menu-item index="2-1">
+                        <el-icon>
+                            <UserFilled />
+                        </el-icon>
+                        <span>个人考勤</span>
+                    </el-menu-item>
+                    <el-menu-item index="2-2">
+                        <el-icon>
+                            <User />
+                        </el-icon>
+                        <span>下属考勤</span>
+                    </el-menu-item>
+                </el-sub-menu>
+                <el-sub-menu index="3">
+                    <template #title>
+                        <el-icon>
+                            <BellFilled />
+                        </el-icon>
+                        <span>通知管理</span>
+                    </template>
+                    <el-menu-item index="3-1">
+                        <el-icon>
+                            <BellFilled />
+                        </el-icon>
+                        <span>发布通知</span>
+                    </el-menu-item>
+                    <el-menu-item index="3-2">
+                        <el-icon>
+                            <Tickets />
+                        </el-icon>
+                        <span>通知列表</span>
+                    </el-menu-item>
+                </el-sub-menu>
+                <el-sub-menu index="4">
+                    <template #title>
+                        <el-icon>
+                            <Avatar />
+                        </el-icon>
+                        <span>员工管理</span>
+                    </template>
+                    <el-menu-item index="4-1">
+                        <el-icon>
+                            <Plus />
+                        </el-icon>
+                        <span>新增员工</span>
+                    </el-menu-item>
+                    <el-menu-item index="4-2">
+                        <el-icon>
+                            <Tickets />
+                        </el-icon>
+                        <span>员工列表</span>
+                    </el-menu-item>
+                </el-sub-menu>
+            </el-menu>
+        </el-aside>
+        <el-container>
+            <el-header class="header">
+                <el-button 
+                    class="collapse-btn" 
+                    :icon="isCollapse ? Expand : Fold" 
+                    @click="onCollapseAside"
+                    circle />
+            </el-header>
+            <el-main class="main">Main</el-main>
+        </el-container>
+    </el-container>
+</template>
+
+<style scoped>
+.aside {
+    background-color: #343a40;
+    box-shadow: 0 14px 28px rgba(0, 0, 0, .25), 0 10px 10px rgba(0, 0, 0, .22) !important;
+    transition: width 0.3s ease-in-out;
+}
+
+.container {
+    height: 100vh;
+    background-color: #f4f6f9;
+}
+
+.aside .brand {
+    color: #fff;
+    text-decoration: none;
+    border-bottom: 1px solid #434a50;
+    background-color: #232631;
+    height: 60px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.brand-text {
+    margin-left: 4px;
+}
+
+.header {
+    height: 60px;
+    background-color: #fff;
+    border-bottom: 1px solid #e6e6e6;
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+}
+
+.el-menu {
+    border-right: none;
+}
+
+.el-menu-item,
+.el-sub-menu__title {
+    color: #fff !important;
+    transition: all 0.3s ease;
+}
+
+.el-menu-item:hover,
+.el-sub-menu__title:hover {
+    background-color: #364781 !important;
+}
+
+.collapse-btn {
+    font-size: 18px;
+    border: none;
+    background: transparent;
+    color: #606266;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.collapse-btn:hover {
+    color: #409eff;
+    transform: scale(1.1);
+}
+
+.fade-enter-active,
+.fade-leave-active {
+    transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+    opacity: 0;
+}
+</style>
+
+```
+
+## 21.header组件布局
+
+修改`frame.vue`文件内容
+
+```vue
+<script setup name="frame">
+import { ref, computed } from 'vue'
+import {
+    Expand,
+    Fold,
+} from '@element-plus/icons-vue'
+
+let isCollapse = ref(false);
+let asidWidth = computed(() => {
+    if (isCollapse.value) {
+        return '64px'
+    } else {
+        return '250px'
+    }
+})
+
+const onCollapseAside = () => {
+    isCollapse.value = !isCollapse.value;
+}
+</script>
+
+<template>
+    <el-container class="container">
+        <el-aside class="aside" :width="asidWidth">
+            <router-link to="/" class="brand">
+                <strong>Hiiaen</strong>
+                <transition name="fade">
+                    <span v-show="!isCollapse" class="brand-text">OA</span>
+                </transition>
+            </router-link>
+            <el-menu default-active="1" class="el-menu-vertical-demo" background-color="#343a40" text-color="#fff"
+                :collapse="isCollapse" :collapse-transition="false">
+                <el-menu-item index="1">
+                    <el-icon>
+                        <HomeFilled />
+                    </el-icon>
+                    <span>首页</span>
+                </el-menu-item>
+                <el-sub-menu index="2">
+                    <template #title>
+                        <el-icon>
+                            <Checked />
+                        </el-icon>
+                        <span>考勤管理</span>
+                    </template>
+                    <el-menu-item index="2-1">
+                        <el-icon>
+                            <UserFilled />
+                        </el-icon>
+                        <span>个人考勤</span>
+                    </el-menu-item>
+                    <el-menu-item index="2-2">
+                        <el-icon>
+                            <User />
+                        </el-icon>
+                        <span>下属考勤</span>
+                    </el-menu-item>
+                </el-sub-menu>
+                <el-sub-menu index="3">
+                    <template #title>
+                        <el-icon>
+                            <BellFilled />
+                        </el-icon>
+                        <span>通知管理</span>
+                    </template>
+                    <el-menu-item index="3-1">
+                        <el-icon>
+                            <BellFilled />
+                        </el-icon>
+                        <span>发布通知</span>
+                    </el-menu-item>
+                    <el-menu-item index="3-2">
+                        <el-icon>
+                            <Tickets />
+                        </el-icon>
+                        <span>通知列表</span>
+                    </el-menu-item>
+                </el-sub-menu>
+                <el-sub-menu index="4">
+                    <template #title>
+                        <el-icon>
+                            <Avatar />
+                        </el-icon>
+                        <span>员工管理</span>
+                    </template>
+                    <el-menu-item index="4-1">
+                        <el-icon>
+                            <Plus />
+                        </el-icon>
+                        <span>新增员工</span>
+                    </el-menu-item>
+                    <el-menu-item index="4-2">
+                        <el-icon>
+                            <Tickets />
+                        </el-icon>
+                        <span>员工列表</span>
+                    </el-menu-item>
+                </el-sub-menu>
+            </el-menu>
+        </el-aside>
+        <el-container>
+            <el-header class="header">
+                <div class="header-left">
+                    <el-button class="collapse-btn" :icon="isCollapse ? Expand : Fold" @click="onCollapseAside" />
+                </div>
+                <el-dropdown>
+                    <span class="el-dropdown-link">
+                        <el-avatar :size="30" icon="UserFilled" />
+                        <span style="margin-left: 4px;">Hiiaen</span>
+                        <el-icon class="el-icon--right">
+                            <arrow-down />
+                        </el-icon>
+                    </span>
+                    <template #dropdown>
+                        <el-dropdown-menu>
+                            <el-dropdown-item>修改密码</el-dropdown-item>
+                            <el-dropdown-item divided>退出登录</el-dropdown-item>
+                        </el-dropdown-menu>
+                    </template>
+                </el-dropdown>
+            </el-header>
+            <el-main class="main">Main</el-main>
+        </el-container>
+    </el-container>
+</template>
+
+<style scoped>
+.aside {
+    background-color: #343a40;
+    box-shadow: 0 14px 28px rgba(0, 0, 0, .25), 0 10px 10px rgba(0, 0, 0, .22) !important;
+    transition: width 0.3s ease-in-out;
+}
+
+.container {
+    height: 100vh;
+    background-color: #f4f6f9;
+}
+
+.aside .brand {
+    color: #fff;
+    text-decoration: none;
+    border-bottom: 1px solid #434a50;
+    background-color: #232631;
+    height: 60px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.brand-text {
+    margin-left: 4px;
+}
+
+.header {
+    height: 60px;
+    background-color: #fff;
+    border-bottom: 1px solid #e6e6e6;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+
+}
+
+.el-dropdown-link{
+    display: flex;
+    align-items: center;
+}
+
+.el-menu {
+    border-right: none;
+}
+
+.el-menu-item,
+.el-sub-menu__title {
+    color: #fff !important;
+    transition: all 0.3s ease;
+}
+
+.el-menu-item:hover,
+.el-sub-menu__title:hover {
+    background-color: #364781 !important;
+}
+
+.collapse-btn {
+    font-size: 18px;
+    border: none;
+    background: transparent;
+    color: #606266;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.collapse-btn:hover {
+    color: #409eff;
+    transform: scale(1.1);
+}
+
+.fade-enter-active,
+.fade-leave-active {
+    transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+    opacity: 0;
+}
+</style>
+
+```
+
+## 22.auth.js 小bug
+
+修改`auth.js`
+
+```js
+import { ref, computed } from 'vue'
+import { defineStore } from 'pinia'
+
+const USER_KEY = "OA_USER_KEY";
+const TOKEN_KEY = "OA_TOKEN_KEY";
+
+export const useAuthStore = defineStore('auth', () => {
+    let _user = ref({});
+    let _token = ref({});
+
+    function setUerToken(user, token) {
+        // 保存到对象上(内存中)
+        _user.value = user;
+        _token.value = token;
+
+        // 存储到浏览器的localStorge(硬盘上)
+        localStorage.setItem(USER_KEY, JSON.stringify(user));
+        localStorage.setItem(TOKEN_KEY, token);
+    }
+
+    // 计算属性
+    let user = computed(() => {
+        // 如果_user是一个空对象，那么就视图从localStorge中获取
+        if (Object.keys(_user.value).length == 0) {
+            let user_str = localStorage.getItem(USER_KEY);
+            if (user_str) {
+                _user.value = JSON.parse(user_str);
+            }
+        }
+        return _user.value;
+    });
+    // 计算属性
+    let token = computed(() => {
+        // 如果_token是一个空对象，那么就视图从localStorge中获取
+        if (!_token.value) {
+            let token_str = localStorage.getItem(TOKEN_KEY);
+           if(token_str){
+            _token.value = token_str;
+           }
+        }
+        return _token.value;
+    });
+    // 想要让外面访问，就必须要返回
+    return { setUerToken, user, token }
+})
+
+```
+
+## 23.未登录限制访问
+
+## 23.1修改`auth.js`
+
+```js
+import { ref, computed } from 'vue'
+import { defineStore } from 'pinia'
+
+const USER_KEY = "OA_USER_KEY";
+const TOKEN_KEY = "OA_TOKEN_KEY";
+
+export const useAuthStore = defineStore('auth', () => {
+    let _user = ref({});
+    let _token = ref({});
+
+    function setUerToken(user, token) {
+        // 保存到对象上(内存中)
+        _user.value = user;
+        _token.value = token;
+
+        // 存储到浏览器的localStorge(硬盘上)
+        localStorage.setItem(USER_KEY, JSON.stringify(user));
+        localStorage.setItem(TOKEN_KEY, token);
+    }
+
+    // 计算属性
+    let user = computed(() => {
+        // 如果_user是一个空对象，那么就视图从localStorge中获取
+        if (Object.keys(_user.value).length == 0) {
+            let user_str = localStorage.getItem(USER_KEY);
+            if (user_str) {
+                _user.value = JSON.parse(user_str);
+            }
+        }
+        return _user.value;
+    });
+    // 计算属性
+    let token = computed(() => {
+        // 如果_token是一个空对象，那么就视图从localStorge中获取
+        if (!_token.value) {
+            let token_str = localStorage.getItem(TOKEN_KEY);
+           if(token_str){
+            _token.value = token_str;
+           }
+        }
+        return _token.value;
+    });
+
+    let  is_logined = computed(() =>{
+      if(Object.keys(user.value).length>0 && token.value){
+        return true;
+      }
+      return false;
+    })
+
+    // 想要让外面访问，就必须要返回
+    return { setUerToken, user, token,is_logined }
+})
+
+```
+
+## 23.2修改`index.js`
+
+```js
+router.beforeEach((to, from) =>{
+  const authStore = useAuthStore();
+  if(!authStore.is_logined && to.name != 'login'){
+    return {name:'login'}
+  }
+})
+```
+
+这样就实现了，没有登录无法访问frame页面。
+
+## 24.退出登录功能实现
+
+24.1在`auth.js`构造退出登录的函数
+
+```js
+function clearUerToken(){
+        _user.value = {};
+        _token.value = '';
+        localStorage.removeItem(USER_KEY);
+        localStorage.removeItem(TOKEN_KEY);
+    }
+```
+
+### 24.2添加按钮以及显示真实信息
+
+在`frame.vue`中修改
+
+```vue
+<script setup name="frame">
+import { ref, computed } from 'vue'
+import {
+    Expand,
+    Fold,
+} from '@element-plus/icons-vue'
+import { useAuthStore } from '@/stores/auth';
+import { useRouter } from 'vue-router';
+
+const authStore = useAuthStore();
+const router = useRouter();
+
+let isCollapse = ref(false);
+let asidWidth = computed(() => {
+    if (isCollapse.value) {
+        return '64px'
+    } else {
+        return '250px'
+    }
+})
+
+const onCollapseAside = () => {
+    isCollapse.value = !isCollapse.value;
+}
+
+const onExit = () =>{
+    authStore.clearUerToken();
+    router.push({name:'login'});
+}
+</script>
+
+<template>
+    <el-container class="container">
+        <el-aside class="aside" :width="asidWidth">
+            <router-link to="/" class="brand">
+                <strong>Hiiaen</strong>
+                <transition name="fade">
+                    <span v-show="!isCollapse" class="brand-text">OA</span>
+                </transition>
+            </router-link>
+            <el-menu default-active="1" class="el-menu-vertical-demo" background-color="#343a40" text-color="#fff"
+                :collapse="isCollapse" :collapse-transition="false">
+                <el-menu-item index="1">
+                    <el-icon>
+                        <HomeFilled />
+                    </el-icon>
+                    <span>首页</span>
+                </el-menu-item>
+                <el-sub-menu index="2">
+                    <template #title>
+                        <el-icon>
+                            <Checked />
+                        </el-icon>
+                        <span>考勤管理</span>
+                    </template>
+                    <el-menu-item index="2-1">
+                        <el-icon>
+                            <UserFilled />
+                        </el-icon>
+                        <span>个人考勤</span>
+                    </el-menu-item>
+                    <el-menu-item index="2-2">
+                        <el-icon>
+                            <User />
+                        </el-icon>
+                        <span>下属考勤</span>
+                    </el-menu-item>
+                </el-sub-menu>
+                <el-sub-menu index="3">
+                    <template #title>
+                        <el-icon>
+                            <BellFilled />
+                        </el-icon>
+                        <span>通知管理</span>
+                    </template>
+                    <el-menu-item index="3-1">
+                        <el-icon>
+                            <BellFilled />
+                        </el-icon>
+                        <span>发布通知</span>
+                    </el-menu-item>
+                    <el-menu-item index="3-2">
+                        <el-icon>
+                            <Tickets />
+                        </el-icon>
+                        <span>通知列表</span>
+                    </el-menu-item>
+                </el-sub-menu>
+                <el-sub-menu index="4">
+                    <template #title>
+                        <el-icon>
+                            <Avatar />
+                        </el-icon>
+                        <span>员工管理</span>
+                    </template>
+                    <el-menu-item index="4-1">
+                        <el-icon>
+                            <Plus />
+                        </el-icon>
+                        <span>新增员工</span>
+                    </el-menu-item>
+                    <el-menu-item index="4-2">
+                        <el-icon>
+                            <Tickets />
+                        </el-icon>
+                        <span>员工列表</span>
+                    </el-menu-item>
+                </el-sub-menu>
+            </el-menu>
+        </el-aside>
+        <el-container>
+            <el-header class="header">
+                <div class="header-left">
+                    <el-button class="collapse-btn" :icon="isCollapse ? Expand : Fold" @click="onCollapseAside" />
+                </div>
+                <el-dropdown>
+                    <span class="el-dropdown-link">
+                        <el-avatar :size="30" icon="UserFilled" />
+                        <span style="margin-left: 4px;">[{{ authStore.user.department.name }}]{{authStore.user.realname}}</span>
+                        <el-icon class="el-icon--right">
+                            <arrow-down />
+                        </el-icon>
+                    </span>
+                    <template #dropdown>
+                        <el-dropdown-menu>
+                            <el-dropdown-item>修改密码</el-dropdown-item>
+                            <el-dropdown-item divided @click="onExit">退出登录</el-dropdown-item>
+                        </el-dropdown-menu>
+                    </template>
+                </el-dropdown>
+            </el-header>
+            <el-main class="main">Main</el-main>
+        </el-container>
+    </el-container>
+</template>
+
+<style scoped>
+.aside {
+    background-color: #343a40;
+    box-shadow: 0 14px 28px rgba(0, 0, 0, .25), 0 10px 10px rgba(0, 0, 0, .22) !important;
+    transition: width 0.3s ease-in-out;
+}
+
+.container {
+    height: 100vh;
+    background-color: #f4f6f9;
+}
+
+.aside .brand {
+    color: #fff;
+    text-decoration: none;
+    border-bottom: 1px solid #434a50;
+    background-color: #232631;
+    height: 60px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.brand-text {
+    margin-left: 4px;
+}
+
+.header {
+    height: 60px;
+    background-color: #fff;
+    border-bottom: 1px solid #e6e6e6;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+
+}
+
+.el-dropdown-link{
+    display: flex;
+    align-items: center;
+}
+
+.el-menu {
+    border-right: none;
+}
+
+.el-menu-item,
+.el-sub-menu__title {
+    color: #fff !important;
+    transition: all 0.3s ease;
+}
+
+.el-menu-item:hover,
+.el-sub-menu__title:hover {
+    background-color: #364781 !important;
+}
+
+.collapse-btn {
+    font-size: 18px;
+    border: none;
+    background: transparent;
+    color: #606266;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.collapse-btn:hover {
+    color: #409eff;
+    transform: scale(1.1);
+}
+
+.fade-enter-active,
+.fade-leave-active {
+    transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+    opacity: 0;
+}
+</style>
+
+```
+
+
+
+
+
