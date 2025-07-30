@@ -4,7 +4,7 @@ from .models import OAUser, UserStatusChoices, OADepartment
 
 
 class LoginSerializer(serializers.Serializer):
-    email = serializers.EmailField(required=True)
+    email = serializers.EmailField(required=True, error_messages={'required': '请输入邮箱！'})
     password = serializers.CharField(max_length=20, min_length=6)
 
     def validate(self, attrs):
