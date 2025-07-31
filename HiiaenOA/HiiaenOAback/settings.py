@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 from pathlib import Path
+import re
 
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -30,31 +31,34 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
-    'django.contrib.admin',
+    # 'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
+    # 'django.contrib.sessions',
+    # 'django.contrib.messages',
     'django.contrib.staticfiles',
     # 安装rest_framework
     'rest_framework',
     # 安装django-cors-headers
     'corsheaders',
     # 安装项目的app
-    'apps.oaauth'
+    'apps.oaauth',
+    'apps.absent'
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
+    # 'django.contrib.sessions.middleware.SessionMiddleware',
     # 跨域中间件配置，一定要在CommonMiddleware前
     "corsheaders.middleware.CorsMiddleware",
     'django.middleware.common.CommonMiddleware',
     # 关闭CSRF保护
     # 'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
+    # 'django.contrib.auth.middleware.AuthenticationMiddleware',
+    # 'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    # 自定义中间件
+    'apps.oaauth.middlewares.LoginCheckMiddleware',
 ]
 
 ROOT_URLCONF = 'HiiaenOAback.urls'
@@ -70,7 +74,7 @@ TEMPLATES = [
                 'django.template.context_processors.debug',
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
+                # 'django.contrib.messages.context_processors.messages',
             ],
         },
     },
@@ -140,3 +144,9 @@ CORS_ALLOW_ALL_ORIGINS = True
 # 下面写法是不对的
 # AUTH_USER_MODEL = 'apps.oaauth.models.OAUser'
 AUTH_USER_MODEL = 'oaauth.OAUser'
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'apps.oaauth.authentications.JWTAuthentication',
+    ]
+}
