@@ -12,6 +12,10 @@ def generate_jwt(user):
     expire_time = int(time.time() + 60*60*24*7)
     return jwt.encode({"userid":user.pk,"exp":expire_time},key=settings.SECRET_KEY)
 
+class UserTokenAuthmentication(BaseAuthentication):
+    def authenticate(self, request):
+        return request._request.user,request._request.auth
+
 class JWTAuthentication(BaseAuthentication):
     """
     Authorization: JWT 401f7ac837da42b97f613d789819ff93537bee6a
