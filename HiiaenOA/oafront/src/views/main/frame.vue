@@ -1,14 +1,42 @@
 <script setup name="frame">
-import { ref, computed } from 'vue'
+import { ref, computed, reactive } from 'vue'
 import {
     Expand,
     Fold,
 } from '@element-plus/icons-vue'
 import { useAuthStore } from '@/stores/auth';
 import { useRouter } from 'vue-router';
+import authHttp from '@/api/authHttp';
+import { ElMessage } from 'element-plus';
 
 const authStore = useAuthStore();
 const router = useRouter();
+
+let dialogVisible = ref(false);
+let resetPwdForm = reactive({
+    oldpwd: '',
+    newpwd: '',
+    newpwd2: '',
+});
+
+let resetPwdFormRef = ref(null);
+
+let formLabelWidth = ref('100px');
+
+let rules = reactive({
+    oldpwd: [
+        { required: true, message: '请输入旧密码', trigger: 'blur' },
+        { min: 6, max: 20, message: '密码长度必须在6到20位之间', trigger: 'blur' },
+    ],
+    newpwd: [
+        { required: true, message: '请输入新密码', trigger: 'blur' },
+        { min: 6, max: 20, message: '密码长度必须在6到20位之间', trigger: 'blur' },
+    ],
+    newpwd2: [
+        { required: true, message: '请确认新密码', trigger: 'blur' },
+        { min: 6, max: 20, message: '密码长度必须在6到20位之间', trigger: 'blur' },
+    ],
+})
 
 let isCollapse = ref(false);
 let asidWidth = computed(() => {
@@ -23,9 +51,33 @@ const onCollapseAside = () => {
     isCollapse.value = !isCollapse.value;
 }
 
-const onExit = () =>{
+const onExit = () => {
     authStore.clearUerToken();
-    router.push({name:'login'});
+    router.push({ name: 'login' });
+}
+
+const onContorlResetPwdDialog = () => {
+    resetPwdForm.oldpwd = '';
+    resetPwdForm.newpwd = '';
+    resetPwdForm.newpwd2 = '';
+    dialogVisible.value = true;
+}
+
+const onSubmit = () => {
+    resetPwdFormRef.value.validate(async (valid,fields) => {
+        if (valid) {
+            try{
+                await authHttp.resetPwd(resetPwdForm.oldpwd,resetPwdForm.newpwd,resetPwdForm.newpwd2);
+                ElMessage.success('密码修改成功');
+                dialogVisible.value = false;
+            }catch(detial){
+                ElMessage.error(detial);    
+            }
+        } else {
+            ElMessage.info('请按要求填写字段');
+        }
+        console.log(fields);
+    })
 }
 </script>
 
@@ -116,14 +168,15 @@ const onExit = () =>{
                 <el-dropdown>
                     <span class="el-dropdown-link">
                         <el-avatar :size="30" icon="UserFilled" />
-                        <span style="margin-left: 4px;">[{{ authStore.user.department.name }}]{{authStore.user.realname}}</span>
+                        <span style="margin-left: 4px;">[{{ authStore.user.department.name
+                        }}]{{ authStore.user.realname }}</span>
                         <el-icon class="el-icon--right">
                             <arrow-down />
                         </el-icon>
                     </span>
                     <template #dropdown>
                         <el-dropdown-menu>
-                            <el-dropdown-item>修改密码</el-dropdown-item>
+                            <el-dropdown-item @click="onContorlResetPwdDialog">修改密码</el-dropdown-item>
                             <el-dropdown-item divided @click="onExit">退出登录</el-dropdown-item>
                         </el-dropdown-menu>
                     </template>
@@ -132,6 +185,29 @@ const onExit = () =>{
             <el-main class="main">Main</el-main>
         </el-container>
     </el-container>
+    <el-dialog v-model="dialogVisible" title="修改密码" width="500">
+
+        <el-form :model="resetPwdForm" :rules="rules" ref="resetPwdFormRef">
+            <el-form-item label="旧密码" :label-width="formLabelWidth" prop="oldpwd">
+                <el-input v-model="resetPwdForm.oldpwd" autocomplete="off" type="password" />
+            </el-form-item>
+            <el-form-item label="新密码" :label-width="formLabelWidth" prop="newpwd">
+                <el-input v-model="resetPwdForm.newpwd" autocomplete="off" type="password" />           
+            </el-form-item>
+            <el-form-item label="确认密码" :label-width="formLabelWidth" prop="newpwd2">
+                <el-input v-model="resetPwdForm.newpwd2" autocomplete="off" type="password" />
+            </el-form-item>
+
+        </el-form>
+        <template #footer>
+            <div class="dialog-footer">
+                <el-button @click="dialogVisible = false">取消</el-button>
+                <el-button type="primary" @click="onSubmit">
+                    确认
+                </el-button>
+            </div>
+        </template>
+    </el-dialog>
 </template>
 
 <style scoped>
@@ -179,7 +255,7 @@ const onExit = () =>{
 
 }
 
-.el-dropdown-link{
+.el-dropdown-link {
     display: flex;
     align-items: center;
 }
