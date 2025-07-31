@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { useAuthStore } from '@/stores/auth';
 
 class Http {
     constructor() {
@@ -6,6 +7,14 @@ class Http {
             baseURL: import.meta.env.VITE_BASE_URL,
             timeout: 10000,
         });
+        this.instance.interceptors.request.use((config) => {
+            const authStore = useAuthStore();
+            const token = authStore.token;
+            if(token){
+                config.headers['Authorization'] = 'JWT ' + token;
+            }
+            return config;
+        })
     }
 
     post(path, data) {
