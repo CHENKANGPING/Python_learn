@@ -2656,7 +2656,993 @@ urlpatterns = [
 ]
 ```
 
+## 26.修改密码功能后端实现
 
+### 26.1定义密码序列化
+
+```python
+class ResetPasswordSerializer(serializers.Serializer):
+    oldpwd = serializers.CharField(max_length=20, min_length=6)
+    newpwd = serializers.CharField(max_length=20, min_length=6)
+    newpwd2 = serializers.CharField(max_length=20, min_length=6)
+    
+    def validate(self, attrs):
+        oldpwd = attrs['oldpwd']
+        newpwd = attrs['newpwd']
+        newpwd2 = attrs['newpwd2']
+        
+        user = self.context['request'].user
+        if not user.check_password(oldpwd):
+            raise exceptions.ValidationError('旧密码错误！')
+        
+        if newpwd != newpwd2:
+            raise exceptions.ValidationError('两次密码不一致！')
+        return attrs
+```
+
+### 26.2视图实现
+
+```python
+class ResetPasswordView(APIView):  
+    def post(self, request):
+        serializer = ResetPasswordSerializer(data=request.data,context={'request':request})
+        if serializer.is_valid(): 
+            newpwd = serializer.validated_data.get('newpwd')
+            request.user.set_password(newpwd)
+            request.user.save()
+            return Response()
+        else:
+            print(serializer.errors)
+            detail = list(serializer.errors.values())[0][0]  
+            return Response({'detail': detail}, status=status.HTTP_400_BAD_REQUEST)
+
+```
+
+### 26.3测试
+
+![image-20250731112949518](C:\Users\ArT\AppData\Roaming\Typora\typora-user-images\image-20250731112949518.png)
+
+![image-20250731112959344](C:\Users\ArT\AppData\Roaming\Typora\typora-user-images\image-20250731112959344.png)
+
+## 27.修改密码对话框实现
+
+修改`frame.vue`文件
+
+```vue
+<script setup name="frame">
+import { ref, computed, reactive } from 'vue'
+import {
+    Expand,
+    Fold,
+} from '@element-plus/icons-vue'
+import { useAuthStore } from '@/stores/auth';
+import { useRouter } from 'vue-router';
+
+const authStore = useAuthStore();
+const router = useRouter();
+
+let dialogVisible = ref(false);
+let resetPwdForm = reactive({
+    oldpwd: '',
+    newpwd: '',
+    newpwd1: '',
+});
+
+let resetPwdFormRef = ref(null);
+
+let formLabelWidth = ref('100px');
+
+let rules = reactive({
+    oldpwd: [
+        { required: true, message: '请输入旧密码', trigger: 'blur' },
+        { min: 6, max: 20, message: '密码长度必须在6到20位之间', trigger: 'blur' },
+    ],
+    newpwd: [
+        { required: true, message: '请输入新密码', trigger: 'blur' },
+        { min: 6, max: 20, message: '密码长度必须在6到20位之间', trigger: 'blur' },
+    ],
+    newpwd1: [
+        { required: true, message: '请确认新密码', trigger: 'blur' },
+        { min: 6, max: 20, message: '密码长度必须在6到20位之间', trigger: 'blur' },
+    ],
+})
+
+let isCollapse = ref(false);
+let asidWidth = computed(() => {
+    if (isCollapse.value) {
+        return '64px'
+    } else {
+        return '250px'
+    }
+})
+
+const onCollapseAside = () => {
+    isCollapse.value = !isCollapse.value;
+}
+
+const onExit = () => {
+    authStore.clearUerToken();
+    router.push({ name: 'login' });
+}
+
+const onContorlResetPwdDialog = () => {
+    resetPwdForm.oldpwd = '';
+    resetPwdForm.newpwd = '';
+    resetPwdForm.newpwd1 = '';
+    dialogVisible.value = true;
+}
+
+const onSubmit = () => {
+    resetPwdFormRef.value.validate((valid,fields) => {
+        if (valid) {
+            console.log('字段校验成功!');
+        } else {
+            console.log('字段校验失败!');
+        }
+        console.log(fields);
+    })
+    console.log('点击了提交');
+    
+
+}
+</script>
+
+<template>
+    <el-container class="container">
+        <el-aside class="aside" :width="asidWidth">
+            <router-link to="/" class="brand">
+                <strong>Hiiaen</strong>
+                <transition name="fade">
+                    <span v-show="!isCollapse" class="brand-text">OA</span>
+                </transition>
+            </router-link>
+            <el-menu default-active="1" class="el-menu-vertical-demo" background-color="#343a40" text-color="#fff"
+                :collapse="isCollapse" :collapse-transition="false">
+                <el-menu-item index="1">
+                    <el-icon>
+                        <HomeFilled />
+                    </el-icon>
+                    <span>首页</span>
+                </el-menu-item>
+                <el-sub-menu index="2">
+                    <template #title>
+                        <el-icon>
+                            <Checked />
+                        </el-icon>
+                        <span>考勤管理</span>
+                    </template>
+                    <el-menu-item index="2-1">
+                        <el-icon>
+                            <UserFilled />
+                        </el-icon>
+                        <span>个人考勤</span>
+                    </el-menu-item>
+                    <el-menu-item index="2-2">
+                        <el-icon>
+                            <User />
+                        </el-icon>
+                        <span>下属考勤</span>
+                    </el-menu-item>
+                </el-sub-menu>
+                <el-sub-menu index="3">
+                    <template #title>
+                        <el-icon>
+                            <BellFilled />
+                        </el-icon>
+                        <span>通知管理</span>
+                    </template>
+                    <el-menu-item index="3-1">
+                        <el-icon>
+                            <BellFilled />
+                        </el-icon>
+                        <span>发布通知</span>
+                    </el-menu-item>
+                    <el-menu-item index="3-2">
+                        <el-icon>
+                            <Tickets />
+                        </el-icon>
+                        <span>通知列表</span>
+                    </el-menu-item>
+                </el-sub-menu>
+                <el-sub-menu index="4">
+                    <template #title>
+                        <el-icon>
+                            <Avatar />
+                        </el-icon>
+                        <span>员工管理</span>
+                    </template>
+                    <el-menu-item index="4-1">
+                        <el-icon>
+                            <Plus />
+                        </el-icon>
+                        <span>新增员工</span>
+                    </el-menu-item>
+                    <el-menu-item index="4-2">
+                        <el-icon>
+                            <Tickets />
+                        </el-icon>
+                        <span>员工列表</span>
+                    </el-menu-item>
+                </el-sub-menu>
+            </el-menu>
+        </el-aside>
+        <el-container>
+            <el-header class="header">
+                <div class="header-left">
+                    <el-button class="collapse-btn" :icon="isCollapse ? Expand : Fold" @click="onCollapseAside" />
+                </div>
+                <el-dropdown>
+                    <span class="el-dropdown-link">
+                        <el-avatar :size="30" icon="UserFilled" />
+                        <span style="margin-left: 4px;">[{{ authStore.user.department.name
+                        }}]{{ authStore.user.realname }}</span>
+                        <el-icon class="el-icon--right">
+                            <arrow-down />
+                        </el-icon>
+                    </span>
+                    <template #dropdown>
+                        <el-dropdown-menu>
+                            <el-dropdown-item @click="onContorlResetPwdDialog">修改密码</el-dropdown-item>
+                            <el-dropdown-item divided @click="onExit">退出登录</el-dropdown-item>
+                        </el-dropdown-menu>
+                    </template>
+                </el-dropdown>
+            </el-header>
+            <el-main class="main">Main</el-main>
+        </el-container>
+    </el-container>
+    <el-dialog v-model="dialogVisible" title="修改密码" width="500">
+
+        <el-form :model="resetPwdForm" :rules="rules" ref="resetPwdFormRef">
+            <el-form-item label="旧密码" :label-width="formLabelWidth" prop="oldpwd">
+                <el-input v-model="resetPwdForm.oldpwd" autocomplete="off" type="password" />
+            </el-form-item>
+            <el-form-item label="新密码" :label-width="formLabelWidth" prop="newpwd">
+                <el-input v-model="resetPwdForm.newpwd" autocomplete="off" type="password" />           
+            </el-form-item>
+            <el-form-item label="确认密码" :label-width="formLabelWidth" prop="newpwd1">
+                <el-input v-model="resetPwdForm.newpwd1" autocomplete="off" type="password" />
+            </el-form-item>
+
+        </el-form>
+        <template #footer>
+            <div class="dialog-footer">
+                <el-button @click="dialogVisible = false">取消</el-button>
+                <el-button type="primary" @click="onSubmit">
+                    确认
+                </el-button>
+            </div>
+        </template>
+    </el-dialog>
+</template>
+
+<style scoped>
+.aside {
+    background-color: #343a40;
+    box-shadow: 0 14px 28px rgba(0, 0, 0, .25), 0 10px 10px rgba(0, 0, 0, .22) !important;
+    transition: width 0.3s ease-in-out;
+}
+
+.container {
+    height: 100vh;
+    background-color: #f4f6f9;
+}
+
+.aside .brand {
+    color: #fff;
+    text-decoration: none;
+    border-bottom: 1px solid #434a50;
+    background-color: #232631;
+    height: 60px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.brand-text {
+    margin-left: 4px;
+}
+
+.header {
+    height: 60px;
+    background-color: #fff;
+    border-bottom: 1px solid #e6e6e6;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+
+}
+
+.el-dropdown-link {
+    display: flex;
+    align-items: center;
+}
+
+.el-menu {
+    border-right: none;
+}
+
+.el-menu-item,
+.el-sub-menu__title {
+    color: #fff !important;
+    transition: all 0.3s ease;
+}
+
+.el-menu-item:hover,
+.el-sub-menu__title:hover {
+    background-color: #364781 !important;
+}
+
+.collapse-btn {
+    font-size: 18px;
+    border: none;
+    background: transparent;
+    color: #606266;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.collapse-btn:hover {
+    color: #409eff;
+    transform: scale(1.1);
+}
+
+.fade-enter-active,
+.fade-leave-active {
+    transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+    opacity: 0;
+}
+</style>
+
+```
+
+## 29.修改密码前端实现
+
+### 29.1修改`frame.vue`文件
+
+```vue
+<script setup name="frame">
+import { ref, computed, reactive } from 'vue'
+import {
+    Expand,
+    Fold,
+} from '@element-plus/icons-vue'
+import { useAuthStore } from '@/stores/auth';
+import { useRouter } from 'vue-router';
+import authHttp from '@/api/authHttp';
+import { ElMessage } from 'element-plus';
+
+const authStore = useAuthStore();
+const router = useRouter();
+
+let dialogVisible = ref(false);
+let resetPwdForm = reactive({
+    oldpwd: '',
+    newpwd: '',
+    newpwd2: '',
+});
+
+let resetPwdFormRef = ref(null);
+
+let formLabelWidth = ref('100px');
+
+let rules = reactive({
+    oldpwd: [
+        { required: true, message: '请输入旧密码', trigger: 'blur' },
+        { min: 6, max: 20, message: '密码长度必须在6到20位之间', trigger: 'blur' },
+    ],
+    newpwd: [
+        { required: true, message: '请输入新密码', trigger: 'blur' },
+        { min: 6, max: 20, message: '密码长度必须在6到20位之间', trigger: 'blur' },
+    ],
+    newpwd2: [
+        { required: true, message: '请确认新密码', trigger: 'blur' },
+        { min: 6, max: 20, message: '密码长度必须在6到20位之间', trigger: 'blur' },
+    ],
+})
+
+let isCollapse = ref(false);
+let asidWidth = computed(() => {
+    if (isCollapse.value) {
+        return '64px'
+    } else {
+        return '250px'
+    }
+})
+
+const onCollapseAside = () => {
+    isCollapse.value = !isCollapse.value;
+}
+
+const onExit = () => {
+    authStore.clearUerToken();
+    router.push({ name: 'login' });
+}
+
+const onContorlResetPwdDialog = () => {
+    resetPwdForm.oldpwd = '';
+    resetPwdForm.newpwd = '';
+    resetPwdForm.newpwd2 = '';
+    dialogVisible.value = true;
+}
+
+const onSubmit = () => {
+    resetPwdFormRef.value.validate(async (valid,fields) => {
+        if (valid) {
+            try{
+                await authHttp.resetPwd(resetPwdForm.oldpwd,resetPwdForm.newpwd,resetPwdForm.newpwd2);
+                ElMessage.success('密码修改成功');
+                dialogVisible.value = false;
+            }catch(detial){
+                ElMessage.error(detial);    
+            }
+        } else {
+            ElMessage.info('请按要求填写字段');
+        }
+        console.log(fields);
+    })
+}
+</script>
+
+<template>
+    <el-container class="container">
+        <el-aside class="aside" :width="asidWidth">
+            <router-link to="/" class="brand">
+                <strong>Hiiaen</strong>
+                <transition name="fade">
+                    <span v-show="!isCollapse" class="brand-text">OA</span>
+                </transition>
+            </router-link>
+            <el-menu default-active="1" class="el-menu-vertical-demo" background-color="#343a40" text-color="#fff"
+                :collapse="isCollapse" :collapse-transition="false">
+                <el-menu-item index="1">
+                    <el-icon>
+                        <HomeFilled />
+                    </el-icon>
+                    <span>首页</span>
+                </el-menu-item>
+                <el-sub-menu index="2">
+                    <template #title>
+                        <el-icon>
+                            <Checked />
+                        </el-icon>
+                        <span>考勤管理</span>
+                    </template>
+                    <el-menu-item index="2-1">
+                        <el-icon>
+                            <UserFilled />
+                        </el-icon>
+                        <span>个人考勤</span>
+                    </el-menu-item>
+                    <el-menu-item index="2-2">
+                        <el-icon>
+                            <User />
+                        </el-icon>
+                        <span>下属考勤</span>
+                    </el-menu-item>
+                </el-sub-menu>
+                <el-sub-menu index="3">
+                    <template #title>
+                        <el-icon>
+                            <BellFilled />
+                        </el-icon>
+                        <span>通知管理</span>
+                    </template>
+                    <el-menu-item index="3-1">
+                        <el-icon>
+                            <BellFilled />
+                        </el-icon>
+                        <span>发布通知</span>
+                    </el-menu-item>
+                    <el-menu-item index="3-2">
+                        <el-icon>
+                            <Tickets />
+                        </el-icon>
+                        <span>通知列表</span>
+                    </el-menu-item>
+                </el-sub-menu>
+                <el-sub-menu index="4">
+                    <template #title>
+                        <el-icon>
+                            <Avatar />
+                        </el-icon>
+                        <span>员工管理</span>
+                    </template>
+                    <el-menu-item index="4-1">
+                        <el-icon>
+                            <Plus />
+                        </el-icon>
+                        <span>新增员工</span>
+                    </el-menu-item>
+                    <el-menu-item index="4-2">
+                        <el-icon>
+                            <Tickets />
+                        </el-icon>
+                        <span>员工列表</span>
+                    </el-menu-item>
+                </el-sub-menu>
+            </el-menu>
+        </el-aside>
+        <el-container>
+            <el-header class="header">
+                <div class="header-left">
+                    <el-button class="collapse-btn" :icon="isCollapse ? Expand : Fold" @click="onCollapseAside" />
+                </div>
+                <el-dropdown>
+                    <span class="el-dropdown-link">
+                        <el-avatar :size="30" icon="UserFilled" />
+                        <span style="margin-left: 4px;">[{{ authStore.user.department.name
+                        }}]{{ authStore.user.realname }}</span>
+                        <el-icon class="el-icon--right">
+                            <arrow-down />
+                        </el-icon>
+                    </span>
+                    <template #dropdown>
+                        <el-dropdown-menu>
+                            <el-dropdown-item @click="onContorlResetPwdDialog">修改密码</el-dropdown-item>
+                            <el-dropdown-item divided @click="onExit">退出登录</el-dropdown-item>
+                        </el-dropdown-menu>
+                    </template>
+                </el-dropdown>
+            </el-header>
+            <el-main class="main">Main</el-main>
+        </el-container>
+    </el-container>
+    <el-dialog v-model="dialogVisible" title="修改密码" width="500">
+
+        <el-form :model="resetPwdForm" :rules="rules" ref="resetPwdFormRef">
+            <el-form-item label="旧密码" :label-width="formLabelWidth" prop="oldpwd">
+                <el-input v-model="resetPwdForm.oldpwd" autocomplete="off" type="password" />
+            </el-form-item>
+            <el-form-item label="新密码" :label-width="formLabelWidth" prop="newpwd">
+                <el-input v-model="resetPwdForm.newpwd" autocomplete="off" type="password" />           
+            </el-form-item>
+            <el-form-item label="确认密码" :label-width="formLabelWidth" prop="newpwd2">
+                <el-input v-model="resetPwdForm.newpwd2" autocomplete="off" type="password" />
+            </el-form-item>
+
+        </el-form>
+        <template #footer>
+            <div class="dialog-footer">
+                <el-button @click="dialogVisible = false">取消</el-button>
+                <el-button type="primary" @click="onSubmit">
+                    确认
+                </el-button>
+            </div>
+        </template>
+    </el-dialog>
+</template>
+
+<style scoped>
+.aside {
+    background-color: #343a40;
+    box-shadow: 0 14px 28px rgba(0, 0, 0, .25), 0 10px 10px rgba(0, 0, 0, .22) !important;
+    transition: width 0.3s ease-in-out;
+}
+
+.container {
+    height: 100vh;
+    background-color: #f4f6f9;
+}
+
+.aside .brand {
+    color: #fff;
+    text-decoration: none;
+    border-bottom: 1px solid #434a50;
+    background-color: #232631;
+    height: 60px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.brand-text {
+    margin-left: 4px;
+}
+
+.header {
+    height: 60px;
+    background-color: #fff;
+    border-bottom: 1px solid #e6e6e6;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+
+}
+
+.el-dropdown-link {
+    display: flex;
+    align-items: center;
+}
+
+.el-menu {
+    border-right: none;
+}
+
+.el-menu-item,
+.el-sub-menu__title {
+    color: #fff !important;
+    transition: all 0.3s ease;
+}
+
+.el-menu-item:hover,
+.el-sub-menu__title:hover {
+    background-color: #364781 !important;
+}
+
+.collapse-btn {
+    font-size: 18px;
+    border: none;
+    background: transparent;
+    color: #606266;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.collapse-btn:hover {
+    color: #409eff;
+    transform: scale(1.1);
+}
+
+.fade-enter-active,
+.fade-leave-active {
+    transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+    opacity: 0;
+}
+</style>
+
+```
+
+### 29.2修改`http.js`文件
+
+```js
+this.instance.interceptors.request.use((config) => {
+            const authStore = useAuthStore();
+            const token = authStore.token;
+            if(token){
+                config.headers['Authorization'] = 'JWT ' + token;
+            }
+            return config;
+        })
+```
+
+### 29.3修改`authHttp.js`文件
+
+```js
+import http from './http';
+
+const login = (email,password) =>{
+    const path = '/auth/login';
+    return http.post(path,{email,password});
+}
+
+const resetPwd = (oldpwd,newpwd,newpwd2) => {
+    const path = '/auth/resetpassword';
+    return http.post(path,{oldpwd,newpwd,newpwd2});
+}
+
+export default {
+    login,
+    resetPwd
+}
+```
+
+## 30.考勤相关模型创建
+
+### 30.1创建考勤app
+
+```bash
+python manager.py startapp absent
+```
+
+### 30.2修改app路径
+
+在`absent`下修改`apps.py`
+
+```python
+from django.apps import AppConfig
+
+
+class AbsentConfig(AppConfig):
+    default_auto_field = 'django.db.models.BigAutoField'
+    name = 'apps.absent'  # 修改为完整的应用路径
+
+```
+
+### 30.3注册考勤app
+
+在`settings.py`中注册
+
+```python
+INSTALLED_APPS = [
+    # 'django.contrib.admin',
+    'django.contrib.auth',
+    'django.contrib.contenttypes',
+    # 'django.contrib.sessions',
+    # 'django.contrib.messages',
+    'django.contrib.staticfiles',
+    # 安装rest_framework
+    'rest_framework',
+    # 安装django-cors-headers
+    'corsheaders',
+    # 安装项目的app
+    'apps.oaauth',
+    'apps.absent'
+]
+```
+
+### 30.4考勤模型
+
+```python
+
+from django.db import models
+from django.contrib.auth import get_user_model  # 修正导入方式
+
+OAUser = get_user_model()
+
+class AbsentStatusChoices(models.IntegerChoices):
+    # 审批中
+    AUDITING = 1
+    # 通过
+    PASS = 2
+    # 审核拒绝
+    REJECT = 3
+
+
+class AbsentType(models.Model):
+    name = models.CharField(max_length=100)
+    create_time = models.DateTimeField(auto_now_add=True)
+    
+    
+class Absent(models.Model):  # 修正拼写错误
+    # 1. 标题
+    title = models.CharField(max_length = 200)
+    # 2. 请假详细内容
+    request_content = models.TextField()
+    # 3. 请假类型(事假，婚假)
+    absent_type = models.ForeignKey(AbsentType, on_delete=models.CASCADE, related_name='absents', related_query_name='absents')
+    # 4. 发起人
+    requester = models.ForeignKey(OAUser, on_delete=models.CASCADE, related_name='my_absents', related_query_name='my_absents')  # 修正外键引用和字段名
+    # 5. 审批人（可以为空）
+    responder = models.ForeignKey(OAUser, on_delete=models.CASCADE, related_name='sub_absents', related_query_name='sub_absents', null=True)  # 修正外键引用
+    # 6. 状态
+    status = models.IntegerField(choices=AbsentStatusChoices.choices, default=AbsentStatusChoices.AUDITING)
+    # 7. 请假开始日期
+    start_date = models.DateField()
+    # 8. 请假结束日期
+    end_date = models.DateField()
+    # 9. 请假发起时间
+    create_time = models.DateTimeField(auto_now_add=True)
+    # 10.审批回复内容
+    responder_content = models.TextField()
+```
+
+30.5生成迁移文件，完成迁移
+
+```bash
+python manager.py makemigrations
+python manager.py migrate
+```
+
+## 31.考勤视图集和序列化(1)
+
+### 31.1处理考勤请假相关的API接口
+
+```python
+from django.shortcuts import render
+from rest_framework import viewsets
+from .models import Absent, AbsentType, AbsentStatusChoices
+from rest_framework import mixins,generics
+# Create your views here.
+"""
+    1. 发起考勤(create)
+    2. 处理考勤(update)
+    3. 查看自己的考勤列表(list?who=my)
+    4. 查看下属的考勤列表(list?who=sub
+    
+"""
+
+class AbsenttViewSet(mixins.CreateModelMixin,
+                    mixins.UpdateModelMixin,
+                    mixins.ListModelMixin,
+                    viewsets.GenericViewSet):
+    queryset = Absent.objects.all()
+    serializer_class = None
+
+```
+
+### 31.2创建`serializers.py`文件，处理数据的序列化和反序列化
+
+```python
+from rest_framework import serializers
+from .models import Absent, AbsentType, AbsentStatusChoices
+from apps.oaauth.serializers import UserSerializer
+
+class AbsentTypeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AbsentType
+        fields = '__all__'
+
+class AbsentSerializer(serializers.ModelSerializer):
+    
+    absent_type = AbsentTypeSerializer(read_only=True)
+    absent_type_id = serializers.IntegerField(write_only=True)
+    requester = UserSerializer(read_only=True)
+    responder = UserSerializer(read_only=True)
+    class Meta:
+        model = Absent
+        fields = '__all__'
+        
+    
+    # create
+    def create(self, validated_data):
+        pass
+    
+    
+    # update
+    def update(self, instance, validated_data):
+        pass
+```
+
+### 31.3创建`urls.py`定义考勤模块的API路由
+
+```python
+from django.urls import path,include
+from rest_framework.routers import DefaultRouter
+from . import views
+
+app_name = 'absent'
+
+router = DefaultRouter()
+router.register(r'absent',views.AbsnetViewSet, basename='absent')
+
+urlpatterns = [] + router.urls
+```
+
+## 32.考勤视图集和序列化(2)
+
+### 32.1完善`serializers.py`逻辑
+
+```python
+from rest_framework import serializers
+from .models import Absent, AbsentType, AbsentStatusChoices
+from apps.oaauth.serializers import UserSerializer
+from rest_framework import exceptions
+
+class AbsentTypeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AbsentType
+        fields = '__all__'
+
+class AbsentSerializer(serializers.ModelSerializer):
+    
+    absent_type = AbsentTypeSerializer(read_only=True)
+    absent_type_id = serializers.IntegerField(write_only=True)
+    requester = UserSerializer(read_only=True)
+    responder = UserSerializer(read_only=True)
+    class Meta:
+        model = Absent
+        fields = '__all__'
+    
+    
+    # 验证absent_type_id是否在数据库中
+    def validate_absent_type_id(self, value):
+        if not AbsentType.objects.filter(pk=value).exists():
+            raise exceptions.ValidationError(detial='请假类型不存在！')
+        return value
+        
+    
+    # create
+    def create(self, validated_data):
+        request = self.context['request']
+        user = request.user
+        # 获取审批者
+        # 1.如果是部门leader
+        if user.department.leader.uid == user.uid:
+            # 1.1 如果是董事会
+            if  user.department.name == '董事会':
+                responder = None
+            else:
+                responder = user.department.manager
+        
+        
+        # 2. 如果不是部门leader
+        else:
+            responder = user.department.leader
+            
+        # 如果是董事会的leader，请假就直接通过
+        if responder is None:
+            validated_data['status'] = AbsentStatusChoices.PASS
+        return Absent.objects.create(**validated_data, request = user, responder = responder)
+    
+    
+    # update
+    def update(self, instance, validated_data):
+        if instance.status != AbsentStatusChoices.AUDITING:
+            raise exceptions.ValidationError(detial='不能修改已经确定的请假数据！')
+        request = self.context['request']
+        user = request.user
+        if instance.responder.uid != user.uid:
+            raise exceptions.ValidationError(detial='您无权处理该考勤！')
+        instance.status = validated_data['status']
+        instance.responder_content = validated_data['responder_content']
+        instance.save()
+        return instance
+```
+
+### 32.2完善`views.py`
+
+```python
+from django.shortcuts import render
+from rest_framework import viewsets
+from .models import Absent, AbsentType, AbsentStatusChoices
+from rest_framework import mixins,generics
+from .serializers import AbsentSerializer
+# Create your views here.
+"""
+    1. 发起考勤(create)
+    2. 处理考勤(update)
+    3. 查看自己的考勤列表(list?who=my)
+    4. 查看下属的考勤列表(list?who=sub
+    
+"""
+
+class AbsenttViewSet(mixins.CreateModelMixin,
+                    mixins.UpdateModelMixin,
+                    mixins.ListModelMixin,
+                    viewsets.GenericViewSet):
+    queryset = Absent.objects.all()
+    serializer_class = AbsentSerializer
+
+```
+
+
+
+## 33.考勤视图集和序列化(3) - 初始化考勤类型
+
+在`absent`下创建`management`python包，再在`management`下创建`commands`python包，在该包下创建`initabsenttype.py`
+
+```python
+from django.core.management.base import BaseCommand
+from apps.absent.models import AbsentType
+
+
+class Command(BaseCommand):
+    def handle(self, *args, **options):
+        absent_types = ["事假", "病假", "工伤假", "婚假", "丧假", "产假", "探亲假", "公假", "年休假"]
+        absents = []
+        for absent_type in absent_types:
+            absents.append(AbsentType(name=absent_type))
+
+        AbsentType.objects.bulk_create(absents)
+        self.stdout.write("考勤类型数据初始化成功！")
+```
+
+在终端下执行`python manage.py initabsenttype`
 
 
 
