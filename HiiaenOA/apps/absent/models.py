@@ -38,6 +38,6 @@ class Absent(models.Model):  # 修正拼写错误
     # 9. 请假发起时间
     create_time = models.DateTimeField(auto_now_add=True)
     # 10.审批回复内容
-    responder_content = models.TextField()
+    responder_content = models.TextField(blank=True)
     
     
