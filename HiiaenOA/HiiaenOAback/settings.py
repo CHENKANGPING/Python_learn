@@ -150,3 +150,5 @@ REST_FRAMEWORK = {
         'apps.oaauth.authentications.JWTAuthentication',
     ]
 }
+
+APPEND_SLASH=False
