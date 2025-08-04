@@ -90,7 +90,7 @@ const onSubmit = () => {
                     <span v-show="!isCollapse" class="brand-text">OA</span>
                 </transition>
             </router-link>
-            <el-menu default-active="1" class="el-menu-vertical-demo" background-color="#343a40" text-color="#fff"
+            <el-menu :router="true" default-active="1" class="el-menu-vertical-demo" background-color="#343a40" text-color="#fff"
                 :collapse="isCollapse" :collapse-transition="false">
                 <el-menu-item index="1">
                     <el-icon>
@@ -105,13 +105,13 @@ const onSubmit = () => {
                         </el-icon>
                         <span>考勤管理</span>
                     </template>
-                    <el-menu-item index="2-1">
+                    <el-menu-item index="2-1" :route="{name:'myabsent'}">
                         <el-icon>
                             <UserFilled />
                         </el-icon>
                         <span>个人考勤</span>
                     </el-menu-item>
-                    <el-menu-item index="2-2">
+                    <el-menu-item index="2-2" :route="{name:'subabsent'}">
                         <el-icon>
                             <User />
                         </el-icon>
@@ -182,7 +182,7 @@ const onSubmit = () => {
                     </template>
                 </el-dropdown>
             </el-header>
-            <el-main class="main">Main</el-main>
+            <el-main class="main"><RouterView></RouterView></el-main>
         </el-container>
     </el-container>
     <el-dialog v-model="dialogVisible" title="修改密码" width="500">
